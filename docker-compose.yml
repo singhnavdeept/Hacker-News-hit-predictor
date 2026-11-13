@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  # The HN Hit Predictor FastAPI Inference Service
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: hn-hit-predictor-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  # Local Jenkins Controller (for testing the CI/CD pipeline locally before AWS)
+  jenkins:
+    image: jenkins/jenkins:lts-jdk17
+    container_name: hn-jenkins-local
+    privileged: true
+    user: root
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+
+volumes:
+  jenkins_home:

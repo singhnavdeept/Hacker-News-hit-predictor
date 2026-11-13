@@ -1,0 +1,242 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  HN HIT Predictor - AWS Free Tier CloudFormation Template.
+  Provisions an EC2 instance (t2.micro/t3.micro), S3 Model Artifacts Bucket,
+  IAM Role with CloudWatch & S3 policies, and Security Groups for Docker & Jenkins.
+
+Parameters:
+  InstanceType:
+    Description: "EC2 Instance Type (Free Tier eligible: t2.micro or t3.micro)"
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+    ConstraintDescription: Must be a Free-Tier eligible instance type.
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair for SSH access (optional)
+    Type: String
+    Default: ""
+
+  AdminCidr:
+    Description: Allowed CIDR block for SSH administration (Restrict from 0.0.0.0/0 for DevSecOps best practice)
+    Type: String
+    Default: 10.0.0.0/16
+
+  LatestAmiId:
+    Description: Region-specific Amazon Linux 2023 AMI
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
+
+Resources:
+  # ------------------------------------------------------------
+  # 1. S3 Bucket for Model Artifacts and Datasets (Free Tier: 5GB)
+  # ------------------------------------------------------------
+  ArtifactsS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "hn-hit-predictor-${AWS::AccountId}-${AWS::Region}"
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ------------------------------------------------------------
+  # 2. IAM Role & Profile for CloudWatch & S3 Access
+  # ------------------------------------------------------------
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "HNHitPredictor-EC2Role-${AWS::Region}"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ec2.amazonaws.com]
+            Action: ['sts:AssumeRole']
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: S3ArtifactsAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !GetAtt ArtifactsS3Bucket.Arn
+                  - !Sub "${ArtifactsS3Bucket.Arn}/*"
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+        - !Ref EC2InstanceRole
+
+  # ------------------------------------------------------------
+  # 3. Security Group (SSH, API Port 8000, Jenkins Port 8080)
+  # ------------------------------------------------------------
+  ServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for HN Hit Predictor API and Jenkins
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AdminCidr
+          Description: Restricted SSH Access (DevSecOps CKV_AWS_24 compliant)
+        - IpProtocol: tcp
+          FromPort: 8000
+          ToPort: 8000
+          CidrIp: 0.0.0.0/0
+          Description: FastAPI Inference Endpoint
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: !Ref AdminCidr
+          Description: Jenkins CI/CD Dashboard (Restricted to Admin)
+
+  # ------------------------------------------------------------
+  # 4. EC2 Instance (Runs Docker, App, and Jenkins)
+  # ------------------------------------------------------------
+  AppServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: !Ref LatestAmiId
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroupIds:
+        - !GetAtt ServerSecurityGroup.GroupId
+      KeyName: !If [HasKeyName, !Ref KeyName, !Ref "AWS::NoValue"]
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: 20  # Free tier allows up to 30 GB EBS
+            VolumeType: gp3
+            DeleteOnTermination: true
+      Tags:
+        - Key: Name
+          Value: HN-Hit-Predictor-Server
+        - Key: Project
+          Value: HNHitPredictor
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -e
+          dnf update -y
+          dnf install -y docker git amazon-cloudwatch-agent
+
+          # Enable and start Docker
+          systemctl enable docker
+          systemctl start docker
+          usermod -aG docker ec2-user
+
+          # Install Docker Compose plugin
+          DOCKER_CONFIG=/usr/local/lib/docker
+          mkdir -p $DOCKER_CONFIG/cli-plugins
+          curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o $DOCKER_CONFIG/cli-plugins/docker-compose
+          chmod +x $DOCKER_CONFIG/cli-plugins/docker-compose
+
+          # Configure CloudWatch Agent
+          cat << 'EOF' > /opt/aws/amazon-cloudwatch-agent/bin/config.json
+          {
+            "agent": {
+              "metrics_collection_interval": 60
+            },
+            "metrics": {
+              "metrics_collected": {
+                "mem": {
+                  "measurement": ["mem_used_percent"]
+                },
+                "disk": {
+                  "measurement": ["used_percent"],
+                  "resources": ["/"]
+                }
+              }
+            },
+            "logs": {
+              "logs_collected": {
+                "files": {
+                  "collect_list": [
+                    {
+                      "file_path": "/var/log/messages",
+                      "log_group_name": "/aws/ec2/hn-hit-predictor",
+                      "log_stream_name": "{instance_id}/system"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+          EOF
+
+          /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/bin/config.json -s
+
+          echo "Bootstrap completed successfully."
+
+  # ------------------------------------------------------------
+  # 5. CloudWatch Log Group & Metric Alarm
+  # ------------------------------------------------------------
+  AppLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/ec2/hn-hit-predictor
+      RetentionInDays: 7  # Keeps log storage minimal and within free tier
+
+  HighCPUAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Trigger alarm if CPU utilization exceeds 80% for 10 minutes
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Statistic: Average
+      Period: 300
+      EvaluationPeriods: 2
+      Threshold: 80
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+        - Name: InstanceId
+          Value: !Ref AppServerInstance
+
+Conditions:
+  HasKeyName: !Not [!Equals [!Ref KeyName, ""]]
+
+Outputs:
+  InstanceId:
+    Description: EC2 Instance ID
+    Value: !Ref AppServerInstance
+
+  PublicDNS:
+    Description: EC2 Public DNS Name
+    Value: !GetAtt AppServerInstance.PublicDnsName
+
+  PublicIP:
+    Description: EC2 Public IPv4 Address
+    Value: !GetAtt AppServerInstance.PublicIp
+
+  FastApiUrl:
+    Description: FastAPI Prediction Documentation URL
+    Value: !Sub "http://${AppServerInstance.PublicIp}:8000/docs"
+
+  JenkinsUrl:
+    Description: Jenkins Dashboard URL
+    Value: !Sub "http://${AppServerInstance.PublicIp}:8080"
+
+  S3ArtifactsBucketName:
+    Description: S3 Bucket for Storing Trained Model Artifacts
+    Value: !Ref ArtifactsS3Bucket

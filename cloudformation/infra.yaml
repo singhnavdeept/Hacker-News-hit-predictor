@@ -8,10 +8,12 @@ Parameters:
   InstanceType:
     Description: "EC2 Instance Type (Free Tier eligible: t2.micro or t3.micro)"
     Type: String
-    Default: t2.micro
+    Default: t3.micro
     AllowedValues:
-      - t2.micro
       - t3.micro
+      - t2.micro
+      - t3.nano
+      - t2.nano
     ConstraintDescription: Must be a Free-Tier eligible instance type.
 
   KeyName:

@@ -81,13 +81,13 @@ pipeline {
                     docker run -d --name ${APP_NAME}-smoke -p ${TEST_PORT}:8000 ${APP_NAME}:latest
                     
                     # Wait for container startup
-                    sleep 5
+                    sleep 7
                     
-                    # Verify health check endpoint
-                    curl -s -f http://localhost:${TEST_PORT}/health || (docker logs ${APP_NAME}-smoke && exit 1)
+                    # Verify health check endpoint directly inside container
+                    docker exec ${APP_NAME}-smoke curl -s -f http://localhost:8000/health || (docker logs ${APP_NAME}-smoke && exit 1)
                     
-                    # Verify prediction endpoint
-                    curl -s -X POST http://localhost:${TEST_PORT}/predict \
+                    # Verify prediction endpoint directly inside container
+                    docker exec ${APP_NAME}-smoke curl -s -X POST http://localhost:8000/predict \
                         -H "Content-Type: application/json" \
                         -d '{"title": "Show HN: My New MLOps Pipeline in Docker", "url": "https://github.com/test/pipeline"}'
                     

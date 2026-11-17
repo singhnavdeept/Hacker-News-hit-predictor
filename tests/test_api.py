@@ -11,8 +11,9 @@ def ensure_model_is_loaded():
 def test_root_endpoint():
     response = client.get("/")
     assert response.status_code == 200
-    data = response.json()
-    assert data["project"] == "HN HIT Predictor"
+    # Returns HTML web UI or JSON fallback
+    assert ("text/html" in response.headers.get("content-type", "") or 
+            response.json().get("project") == "HN HIT Predictor")
 
 def test_health_endpoint():
     response = client.get("/health")

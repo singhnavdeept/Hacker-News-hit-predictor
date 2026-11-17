@@ -7,6 +7,8 @@ import joblib
 import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.schemas import PredictionRequest, PredictionResponse, HealthResponse, MetricsResponse
 from src.data_loader import extract_domain_type
@@ -52,8 +54,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/", tags=["Info"])
+STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+@app.get("/", tags=["UI"])
 def root():
+    index_file = os.path.join(STATIC_DIR, "index.html")
+    if os.path.exists(index_file):
+        return FileResponse(index_file)
     return {
         "project": "HN HIT Predictor",
         "description": "MLOps Pipeline on AWS / Docker",

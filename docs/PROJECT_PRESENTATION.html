@@ -11,9 +11,9 @@
     :root {
       --aws-orange: #FF9900;
       --aws-squid: #232F3E;
-      --aws-dark: #0F172A;
-      --aws-card: #1E293B;
-      --aws-border: #334155;
+      --aws-dark: #0A0E17;
+      --aws-card: #131A26;
+      --aws-border: #223049;
       --aws-light: #F8FAFC;
       --text-muted: #94A3B8;
       --accent-blue: #38BDF8;
@@ -37,7 +37,6 @@
       width: 100vw;
     }
 
-    /* Presentation Deck Container */
     .deck-container {
       position: relative;
       width: 100vw;
@@ -46,10 +45,9 @@
       flex-direction: column;
     }
 
-    /* Top Global Header */
     header {
       height: 60px;
-      background: rgba(30, 41, 59, 0.7);
+      background: rgba(19, 26, 38, 0.85);
       backdrop-filter: blur(12px);
       border-bottom: 1px solid var(--aws-border);
       display: flex;
@@ -69,7 +67,7 @@
       background: var(--aws-orange);
       color: #000;
       font-weight: 800;
-      font-size: 15px;
+      font-size: 14px;
       padding: 4px 8px;
       border-radius: 4px;
       font-family: 'JetBrains Mono', monospace;
@@ -88,7 +86,7 @@
     .deck-meta {
       display: flex;
       align-items: center;
-      gap: 18px;
+      gap: 16px;
       font-size: 13px;
       color: var(--text-muted);
     }
@@ -114,32 +112,31 @@
       box-shadow: 0 0 8px var(--accent-green);
     }
 
-    /* Slide Stage */
     .slide-stage {
       flex: 1;
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 24px 48px;
+      padding: 20px 40px;
     }
 
     .slide {
       position: absolute;
-      width: calc(100vw - 96px);
-      max-width: 1300px;
+      width: calc(100vw - 80px);
+      max-width: 1320px;
       height: calc(100vh - 144px);
       background: var(--aws-card);
       border: 1px solid var(--aws-border);
       border-radius: 16px;
-      padding: 44px 54px;
+      padding: 32px 44px;
       opacity: 0;
       pointer-events: none;
       transform: scale(0.97) translateY(12px);
       transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
       display: flex;
       flex-direction: column;
-      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
       overflow-y: auto;
     }
 
@@ -150,7 +147,6 @@
       z-index: 10;
     }
 
-    /* Slide Header Elements */
     .slide-badge {
       display: inline-block;
       text-transform: uppercase;
@@ -158,175 +154,143 @@
       letter-spacing: 1px;
       font-weight: 700;
       color: var(--aws-orange);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .slide-title {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 800;
       color: #fff;
       letter-spacing: -0.5px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .slide-subtitle {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--text-muted);
       line-height: 1.5;
-      margin-bottom: 28px;
+      margin-bottom: 20px;
     }
 
-    /* Grid Layouts */
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      gap: 20px;
       flex: 1;
     }
 
     .grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      flex: 1;
-    }
-
-    .grid-4 {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       flex: 1;
     }
 
-    /* Cards inside slides */
     .feature-card {
-      background: rgba(15, 23, 42, 0.6);
+      background: rgba(10, 14, 23, 0.6);
       border: 1px solid var(--aws-border);
       border-radius: 12px;
-      padding: 22px;
+      padding: 18px 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
     }
 
     .feature-card.highlight {
-      border-color: rgba(255, 153, 0, 0.5);
-      background: rgba(255, 153, 0, 0.05);
-    }
-
-    .card-icon {
-      font-size: 24px;
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 153, 0, 0.4);
+      background: rgba(255, 153, 0, 0.04);
     }
 
     .card-heading {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
     .card-text {
       font-size: 13px;
       color: var(--text-muted);
-      line-height: 1.6;
+      line-height: 1.5;
     }
 
-    /* Monospace Code & Flow Boxes */
-    .code-box {
-      background: #090D16;
-      border: 1px solid #1E293B;
-      border-radius: 8px;
+    /* Diagram Canvas Container */
+    .diagram-container {
+      background: #060910;
+      border: 1px solid var(--aws-border);
+      border-radius: 12px;
       padding: 16px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: #E2E8F0;
-      line-height: 1.6;
-      overflow-x: auto;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
-    .highlight-text {
-      color: var(--aws-orange);
-      font-weight: 600;
-    }
-
-    .highlight-green {
-      color: var(--accent-green);
-      font-weight: 600;
-    }
-
-    .highlight-blue {
-      color: var(--accent-blue);
-      font-weight: 600;
+    .diagram-svg {
+      width: 100%;
+      height: 100%;
+      max-height: 480px;
     }
 
     /* Table styles */
     .custom-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
-      margin-top: 4px;
+      font-size: 12.5px;
     }
 
     .custom-table th {
-      background: #090D16;
+      background: #060910;
       color: var(--aws-orange);
       text-align: left;
-      padding: 12px 14px;
+      padding: 10px 12px;
       font-weight: 700;
       border-bottom: 2px solid var(--aws-border);
     }
 
     .custom-table td {
-      padding: 12px 14px;
+      padding: 10px 12px;
       border-bottom: 1px solid var(--aws-border);
       color: #CBD5E1;
-    }
-
-    .custom-table tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
     }
 
     /* Metric stat callouts */
     .stat-badge {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      background: #0F172A;
+      gap: 2px;
+      background: #060910;
       border: 1px solid var(--aws-border);
       border-radius: 8px;
-      padding: 14px 18px;
+      padding: 12px 16px;
     }
 
     .stat-number {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 800;
       color: var(--aws-orange);
       font-family: 'JetBrains Mono', monospace;
     }
 
     .stat-label {
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
-    /* Bottom Navigation Bar */
+    /* Footer */
     footer {
-      height: 64px;
-      background: rgba(30, 41, 59, 0.85);
+      height: 60px;
+      background: rgba(19, 26, 38, 0.85);
       border-top: 1px solid var(--aws-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 36px;
+      padding: 0 32px;
       z-index: 100;
     }
 
@@ -337,17 +301,14 @@
     }
 
     .nav-btn {
-      background: #0F172A;
+      background: #060910;
       border: 1px solid var(--aws-border);
       color: #fff;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 12px;
       font-weight: 600;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       transition: all 0.2s;
     }
 
@@ -360,7 +321,7 @@
     .nav-btn:disabled {
       opacity: 0.3;
       cursor: not-allowed;
-      background: #0F172A;
+      background: #060910;
       color: #fff;
       border-color: var(--aws-border);
     }
@@ -381,20 +342,17 @@
     }
 
     .dot.active {
-      width: 24px;
+      width: 22px;
       background: var(--aws-orange);
     }
 
     .key-hint {
       font-size: 12px;
       color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
     }
 
     .kbd {
-      background: #0F172A;
+      background: #060910;
       border: 1px solid var(--aws-border);
       padding: 2px 6px;
       border-radius: 4px;
@@ -411,43 +369,40 @@
   <header>
     <div class="brand">
       <div class="brand-logo">AWS</div>
-      <div class="brand-name">HN HIT Predictor <span>// Cloud MLOps & DevSecOps</span></div>
+      <div class="brand-name">HN HIT Predictor <span>// Cloud MLOps & DevSecOps Platform</span></div>
     </div>
     <div class="deck-meta">
-      <div class="status-badge"><span class="status-dot"></span> 100% AWS Free Tier Verified ($0.00/mo)</div>
+      <div class="status-badge"><span class="status-dot"></span> Jenkins & FastAPI Active on EC2</div>
       <div>Candidate: <strong>Navdeep Singh</strong> (12308217)</div>
       <div>Section: <strong>K2O2313</strong></div>
     </div>
   </header>
 
-  <!-- Main Slide Stage -->
+  <!-- Slide Stage -->
   <div class="slide-stage">
 
-    <!-- SLIDE 1: Title & Cloud Context -->
+    <!-- SLIDE 1: Title & Executive Summary -->
     <div class="slide active" id="slide-1">
       <span class="slide-badge">Academic Capstone // Enterprise Cloud Architecture</span>
       <h1 class="slide-title">HN HIT Predictor: An MLOps & DevSecOps Pipeline on AWS</h1>
-      <p class="slide-subtitle">Automating natural language technical virality prediction through immutable Docker containers, 7-stage declarative Jenkins pipelines, and zero-cost AWS Free Tier CloudFormation infrastructure.</p>
+      <p class="slide-subtitle">Predicting technical content virality with automated CI/CD on Jenkins, security scanning via Checkov & Trivy, and 100% Free Tier CloudFormation on Amazon Web Services.</p>
 
       <div class="grid-3">
         <div class="feature-card highlight">
-          <div class="card-icon">☁️</div>
-          <div class="card-heading">Cloud-Native Infrastructure</div>
-          <div class="card-text">Declarative <strong>AWS CloudFormation</strong> template managing Amazon EC2 (t3.micro), Amazon S3 (AES-256 encrypted model store), IAM least-privilege roles, and CloudWatch agent telemetry.</div>
+          <div class="card-heading">☁️ CloudFormation IaC</div>
+          <div class="card-text">Automated provisioning of Amazon EC2 (<code>t3.micro</code>), encrypted Amazon S3 model storage, least-privilege IAM roles, and CloudWatch agent telemetry.</div>
         </div>
         <div class="feature-card highlight">
-          <div class="card-icon">🛡️</div>
-          <div class="card-heading">Shift-Left DevSecOps Gates</div>
-          <div class="card-text">Automated pre-deployment scanning: <strong>Bridgecrew Checkov</strong> (24/24 CIS IaC checks passed) and <strong>Aqua Trivy</strong> (container image certified clean of high/critical CVEs).</div>
+          <div class="card-heading">⚙️ Jenkins CI/CD on EC2</div>
+          <div class="card-text">7-stage declarative Jenkins controller running live in Docker on EC2 port 8080 with access to the host Docker socket for automated builds and testing.</div>
         </div>
         <div class="feature-card highlight">
-          <div class="card-icon">⚡</div>
-          <div class="card-heading">Production Microservice & UI</div>
-          <div class="card-text">Low-latency <strong>FastAPI ASGI</strong> microservice with interactive single-page dashboard serving sub-5ms probabilistic predictions, confidence tiers, and feature breakdowns.</div>
+          <div class="card-heading">🛡️ DevSecOps Shift-Left</div>
+          <div class="card-text">Automated policy checks: <strong>Checkov</strong> (24/24 CIS AWS rules passed) and <strong>Aqua Trivy</strong> (0 High/Critical CVEs) guarding the production pipeline.</div>
         </div>
       </div>
 
-      <div style="margin-top: 24px; display: flex; gap: 16px;">
+      <div style="margin-top: 20px; display: flex; gap: 14px;">
         <div class="stat-badge" style="flex:1;">
           <div class="stat-number">100%</div>
           <div class="stat-label">Pytest Pass Rate (7/7 Suites)</div>
@@ -467,245 +422,295 @@
       </div>
     </div>
 
-    <!-- SLIDE 2: Problem Statement & Production Gap -->
+    <!-- SLIDE 2: Full AWS Cloud Infrastructure Architecture Diagram -->
     <div class="slide" id="slide-2">
-      <span class="slide-badge">Problem Statement // Industry Challenge</span>
-      <h1 class="slide-title">The Content Engagement Paradox & The MLOps Gap</h1>
-      <p class="slide-subtitle">Over 10,000 developer and tech articles are submitted to Hacker News weekly; less than 25% ever achieve frontpage visibility or community traction (≥ 50 upvotes).</p>
+      <span class="slide-badge">Cloud Architecture // Visual Diagram 1</span>
+      <h1 class="slide-title">AWS Cloud Topology & Network Perimeter</h1>
+      <p class="slide-subtitle">How external users, administrators, and AWS cloud services interconnect securely within the VPC and security perimeter.</p>
 
-      <div class="grid-2">
-        <div class="feature-card">
-          <div class="card-heading" style="color: var(--accent-red);">❌ The Academic Machine Learning Anti-Pattern</div>
-          <div class="card-text">
-            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:8px;">
-              <li><strong>The Isolated Notebook Trap:</strong> Models trained in messy Jupyter cells with manual, non-reproducible local state.</li>
-              <li><strong>Statistical Data Leakage:</strong> Preprocessing and scaling applied globally before cross-validation train/test splits.</li>
-              <li><strong>Missing Deployment Workflows:</strong> No REST API microservices, Dockerization, or automated rollback capabilities.</li>
-              <li><strong>Ignored Security Auditing:</strong> Hardcoded credentials, wide-open security groups (0.0.0.0/0 on port 22), and unchecked CVEs.</li>
-              <li><strong>Runaway Cloud Budgets:</strong> Heavyweight architectures requiring GPU clusters that quickly exceed free allowances.</li>
-            </ul>
-          </div>
-        </div>
+      <div class="diagram-container">
+        <svg class="diagram-svg" viewBox="0 0 1150 460" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="awsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#FF9900" stop-opacity="0.15"/>
+              <stop offset="100%" stop-color="#FF9900" stop-opacity="0.02"/>
+            </linearGradient>
+            <linearGradient id="dockerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.12"/>
+              <stop offset="100%" stop-color="#38BDF8" stop-opacity="0.02"/>
+            </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.6"/>
+            </filter>
+          </defs>
 
-        <div class="feature-card" style="border-color: var(--accent-green);">
-          <div class="card-heading" style="color: var(--accent-green);">✅ The Cloud-Native MLOps Solution</div>
-          <div class="card-text">
-            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:8px;">
-              <li><strong>Unified ColumnTransformer Pipeline:</strong> Encapsulates TF-IDF, categorical encoding, and feature scaling without leakage.</li>
-              <li><strong>Immutable Docker Containerization:</strong> Runs identically on developer laptops and cloud EC2 instances with zero environment drift.</li>
-              <li><strong>7-Stage Declarative Jenkins Pipeline:</strong> Automated linting, testing, packaging, DevSecOps gating, and smoke testing.</li>
-              <li><strong>Security Shift-Left:</strong> Automated policy-as-code audits with Checkov and Aqua Trivy inside the CI/CD pipeline.</li>
-              <li><strong>Strict Free-Tier Cost Governance:</strong> 100% compliant with AWS Free Tier quotas ($0.00/mo operating budget).</li>
-            </ul>
-          </div>
-        </div>
+          <!-- Outer AWS Cloud Box -->
+          <rect x="20" y="20" width="1110" height="420" rx="14" fill="#0D131F" stroke="#223049" stroke-width="2"/>
+          <text x="45" y="52" fill="#FF9900" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="14" letter-spacing="1">AWS CLOUD (FREE TIER ACCOUNT - 100% $0.00/MO)</text>
+
+          <!-- CloudFormation Controller -->
+          <rect x="50" y="75" width="220" height="85" rx="8" fill="#162032" stroke="#38BDF8" stroke-width="1.5" filter="url(#glow)"/>
+          <text x="65" y="105" fill="#38BDF8" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="13">AWS CloudFormation</text>
+          <text x="65" y="125" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">Template: infra.yaml</text>
+          <text x="65" y="142" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="10">Provisions entire stack in 2 min</text>
+
+          <!-- S3 Bucket -->
+          <rect x="50" y="185" width="220" height="105" rx="8" fill="#162032" stroke="#FF9900" stroke-width="1.5" filter="url(#glow)"/>
+          <text x="65" y="215" fill="#FF9900" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="13">Amazon S3 Bucket</text>
+          <text x="65" y="235" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">hn-hit-predictor-artifacts</text>
+          <text x="65" y="252" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">• AES-256 Server Encryption</text>
+          <text x="65" y="268" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">• Public Access Block Enabled</text>
+
+          <!-- CloudWatch -->
+          <rect x="50" y="315" width="220" height="105" rx="8" fill="#162032" stroke="#A855F7" stroke-width="1.5" filter="url(#glow)"/>
+          <text x="65" y="345" fill="#A855F7" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="13">AWS CloudWatch</text>
+          <text x="65" y="365" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">Log: /aws/ec2/hn-hit-predictor</text>
+          <text x="65" y="382" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">• 7-Day Log Retention Limit</text>
+          <text x="65" y="398" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">• HighCPUAlarm (>80% Trigger)</text>
+
+          <!-- VPC / EC2 Boundary -->
+          <rect x="310" y="70" width="800" height="350" rx="12" fill="url(#awsGrad)" stroke="#FF9900" stroke-width="1.5" stroke-dasharray="4,4"/>
+          <text x="330" y="98" fill="#FF9900" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12">SECURITY PERIMETER & EC2 HOST: t3.micro (Amazon Linux 2023)</text>
+          <text x="880" y="98" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="11">20GB EBS + 2GB Swap</text>
+
+          <!-- CloudWatch Agent inside EC2 -->
+          <rect x="330" y="115" width="760" height="40" rx="6" fill="#1E293B" stroke="#A855F7" stroke-width="1"/>
+          <text x="345" y="140" fill="#A855F7" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12">CloudWatch Agent (amazon-cloudwatch-agent)</text>
+          <text x="680" y="140" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="11">Metrics: RAM, Disk, CPU, /var/log/messages</text>
+
+          <!-- Docker Engine Area -->
+          <rect x="330" y="170" width="760" height="235" rx="10" fill="url(#dockerGrad)" stroke="#38BDF8" stroke-width="1.5"/>
+          <text x="350" y="198" fill="#38BDF8" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="13">DOCKER ENGINE & COMPOSE RUNTIME</text>
+
+          <!-- Container 1: FastAPI API & Web UI -->
+          <rect x="350" y="215" width="360" height="170" rx="8" fill="#131C2E" stroke="#10B981" stroke-width="1.5" filter="url(#glow)"/>
+          <text x="370" y="245" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="14">hn-hit-predictor-api</text>
+          <text x="560" y="245" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="11">PORT 8000 (PUBLIC)</text>
+          <text x="370" y="272" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• <span fill="#FF9900">GET /</span> : Modern Interactive Web UI</text>
+          <text x="370" y="295" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• <span fill="#38BDF8">POST /predict</span> : Real-time ML Inference</text>
+          <text x="370" y="318" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• <span fill="#10B981">GET /health</span> : Auto Healthcheck Probe</text>
+          <text x="370" y="341" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• <span fill="#A855F7">GET /metrics</span> : Precision, Recall, ROC-AUC</text>
+          <text x="370" y="365" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">Model: Scikit-Learn TF-IDF + Logistic Regression</text>
+
+          <!-- Container 2: Jenkins Controller -->
+          <rect x="730" y="215" width="340" height="170" rx="8" fill="#131C2E" stroke="#FF9900" stroke-width="1.5" filter="url(#glow)"/>
+          <text x="750" y="245" fill="#FF9900" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="14">hn-jenkins-local</text>
+          <text x="910" y="245" fill="#FF9900" font-family="'JetBrains Mono', monospace" font-size="11">PORT 8080 (ADMIN)</text>
+          <text x="750" y="272" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• Jenkins LTS Controller (JDK 17)</text>
+          <text x="750" y="295" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• Mounted Docker Socket (/var/run/docker.sock)</text>
+          <text x="750" y="318" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• 7-Stage Declarative Pipeline Execution</text>
+          <text x="750" y="341" fill="#E2E8F0" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">• Executes Checkov, Pytest & Aqua Trivy</text>
+          <text x="750" y="365" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-weight="600" font-size="11">✔ Deployed & Active on EC2</text>
+        </svg>
       </div>
     </div>
 
-    <!-- SLIDE 3: End-to-End System Architecture -->
+    <!-- SLIDE 3: Yes! Jenkins on EC2 Explained -->
     <div class="slide" id="slide-3">
-      <span class="slide-badge">System Architecture // Topology</span>
-      <h1 class="slide-title">End-to-End AWS Cloud Architecture</h1>
-      <p class="slide-subtitle">Complete structural flow connecting developer commits, Jenkins CI/CD automation, security scanners, and AWS Free Tier cloud infrastructure.</p>
-
-      <div class="code-box" style="font-size: 11px; line-height: 1.45;">
-+--------------------------------------------------------------------------------------------------------------------+
-|                                           AWS CLOUD INFRASTRUCTURE (FREE TIER)                                     |
-|                                                                                                                    |
-|   +------------------------------------+      +-----------------------------------+     +----------------------+   |
-|   |         Amazon VPC / SG            |      |          Amazon S3 Bucket         |     |    AWS CloudWatch    |   |
-|   |  • Port 8000: Public (API & UI)    |      |  • Name: hn-hit-predictor-acc-reg |     |  • Log Group: /aws   |   |
-|   |  • Port 22: Restricted Admin CIDR  |      |  • AES-256 Server-Side Encryption |     |  • High CPU Alarm    |   |
-|   |  • Port 8080: Restricted Admin CIDR|      |  • Model Artifacts Backup (5 MB)  |     |  • 7-Day Retention   |   |
-|   +-----------------+------------------+      +-----------------+-----------------+     +----------+-----------+   |
-|                     |                                           |                                  |               |
-|                     v                                           v                                  ^               |
-|   +-------------------------------------------------------------------------------+                |               |
-|   |                Amazon EC2 Instance: t3.micro (Amazon Linux 2023)              |                |               |
-|   |  • 20 GB gp3 EBS Volume   • 2 GB SSD Swapfile Protection   • CloudWatch Agent +----------------+               |
-|   |                                                                               |                                |
-|   |   +-----------------------------------------------------------------------+   |                                |
-|   |   |                     Docker Engine & Compose Runtime                   |   |                                |
-|   |   |                                                                       |   |                                |
-|   |   |   [ hn-hit-predictor-api ]              [ hn-jenkins-local ]          |   |                                |
-|   |   |   • FastAPI ASGI Web Service            • Jenkins LTS Controller      |   |                                |
-|   |   |   • Port 8000 (UI, Predict, Health)     • Port 8080 (CI/CD Pipeline)  |   |                                |
-|   |   |   • Embedded Healthcheck Probe          • Privileged Docker Socket    |   |                                |
-|   |   +-----------------------------------------------------------------------+   |                                |
-|   +-------------------------------------------------------------------------------+                                |
-+--------------------------------------------------------------------------------------------------------------------+
-      </div>
-
-      <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
-        <div class="feature-card" style="padding: 14px;">
-          <strong style="color:var(--aws-orange);">Infrastructure as Code</strong>
-          <span style="font-size:12px; color:var(--text-muted);">Provisions all VPC networking, IAM instance profiles, and S3 storage from a single <code>infra.yaml</code> template.</span>
-        </div>
-        <div class="feature-card" style="padding: 14px;">
-          <strong style="color:var(--accent-blue);">Zero Drift Containers</strong>
-          <span style="font-size:12px; color:var(--text-muted);">Docker runtime guarantees total parity between developer workstations and live AWS EC2 servers.</span>
-        </div>
-        <div class="feature-card" style="padding: 14px;">
-          <strong style="color:var(--accent-green);">Automated Observability</strong>
-          <span style="font-size:12px; color:var(--text-muted);">Continuous streaming of system metrics, disk allocations, and HTTP access logs to AWS CloudWatch.</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- SLIDE 4: Machine Learning & Feature Engineering -->
-    <div class="slide" id="slide-4">
-      <span class="slide-badge">ML Pipeline // Mathematical Rigor</span>
-      <h1 class="slide-title">Feature Engineering & Leak-Free Modeling</h1>
-      <p class="slide-subtitle">Combining Natural Language Processing (NLP) text vectorization, URL domain taxonomy, and temporal signals into a unified ColumnTransformer pipeline.</p>
+      <span class="slide-badge">CI/CD Engine // Jenkins on EC2</span>
+      <h1 class="slide-title">Do We Have Jenkins on EC2? Yes, Here Is How It Works</h1>
+      <p class="slide-subtitle">Jenkins runs natively as an isolated container on the EC2 instance, orchestrating builds via Docker-out-of-Docker (DooD) socket sharing.</p>
 
       <div class="grid-2">
-        <div class="feature-card">
-          <div class="card-heading">Feature Architecture & Signals</div>
-          <div class="card-text">
-            <table class="custom-table">
-              <tr>
-                <th>Signal Type</th>
-                <th>Engineering Method</th>
-                <th>Impact</th>
-              </tr>
-              <tr>
-                <td><strong>NLP Headline</strong></td>
-                <td><code>TfidfVectorizer(max_features=3000, ngram_range=(1,2))</code></td>
-                <td>Captures technical anchors (e.g. <em>"Show HN:"</em>, <em>"Rust"</em>, <em>"Postgres"</em>)</td>
-              </tr>
-              <tr>
-                <td><strong>Domain Archetype</strong></td>
-                <td>Categorized into <code>github</code>, <code>blogs</code>, <code>tech_media</code>, <code>paper</code>, <code>self</code></td>
-                <td>Code repos experience 3.8x higher frontpage probability</td>
-              </tr>
-              <tr>
-                <td><strong>Temporal Windows</strong></td>
-                <td>UTC Hour (0-23) & Day of Week (0-6) via <code>StandardScaler</code></td>
-                <td>Peak viral velocity observed between 13:00 - 18:00 UTC</td>
-              </tr>
-              <tr>
-                <td><strong>Text Metrics</strong></td>
-                <td>Character length and token counts</td>
-                <td>Penalizes overly short or spammy commercial clickbait</td>
-              </tr>
-            </table>
-          </div>
-        </div>
-
-        <div class="feature-card">
-          <div class="card-heading">Why L2-Regularized Logistic Regression?</div>
+        <div class="feature-card highlight">
+          <div class="card-heading">🔧 Jenkins Architecture on EC2</div>
           <div class="card-text">
             <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:10px;">
-              <li><strong>Sub-Millisecond Inference:</strong> Scoring takes &lt; 5ms, allowing thousands of requests on low-cost hardware.</li>
-              <li><strong>Ultra-Lightweight Storage:</strong> Serialized model is under <strong>1 MB</strong> (compared to 500 MB+ for deep learning models).</li>
-              <li><strong>Naturally Calibrated Probabilities:</strong> Directly yields genuine posterior probabilities without requiring post-hoc Platt scaling.</li>
-              <li><strong>Direct Interpretability:</strong> Weights can be audited directly to understand why specific headlines succeed or fail.</li>
-              <li><strong>Zero Overfitting on Small Benchmark Splits:</strong> Unlike unconstrained tree ensembles that overfit on sparse text, L2 penalty ensures smooth generalization.</li>
+              <li><strong>Container Name:</strong> <code>hn-jenkins-local</code> running <code>jenkins/jenkins:lts-jdk17</code>.</li>
+              <li><strong>Bound Port:</strong> <code>0.0.0.0:8080->8080/tcp</code> on the EC2 host.</li>
+              <li><strong>Docker-in-Docker Mounting:</strong> The host's <code>/var/run/docker.sock</code> is mounted directly into Jenkins. This enables Jenkins to build Docker images and run test containers using the host's Docker engine.</li>
+              <li><strong>Persistent Workspace:</strong> The <code>jenkins_home</code> volume is stored on the 20 GB EBS volume, preserving build histories across reboots.</li>
             </ul>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-heading">🔑 How to Access Jenkins on EC2</div>
+          <div class="card-text">
+            <p style="margin-bottom:8px;">1. Open the URL in your browser:</p>
+            <div class="code-box" style="margin-bottom:12px;">http://&lt;YOUR_EC2_PUBLIC_IP&gt;:8080/</div>
+            
+            <p style="margin-bottom:8px;">2. Retrieve the initial admin password from EC2 terminal:</p>
+            <div class="code-box" style="margin-bottom:12px;">docker exec -it hn-jenkins-local cat /var/jenkins_home/secrets/initialAdminPassword</div>
+
+            <p style="font-size:12px; color:var(--text-muted);">
+              Once unlocked, point your Jenkins pipeline job to <code>https://github.com/singhnavdeept/Hacker-News-hit-predictor.git</code> to execute the 7-stage CI/CD pipeline!
+            </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- SLIDE 5: Microservice & Frontend Web UI -->
+    <!-- SLIDE 4: Visual CI/CD & DevSecOps Pipeline Flow Diagram -->
+    <div class="slide" id="slide-4">
+      <span class="slide-badge">CI/CD & DevSecOps // Visual Diagram 2</span>
+      <h1 class="slide-title">7-Stage CI/CD & DevSecOps Pipeline Flow</h1>
+      <p class="slide-subtitle">How every commit triggers automated testing, security gating, ephemeral smoke testing, and live rollout.</p>
+
+      <div class="diagram-container">
+        <svg class="diagram-svg" viewBox="0 0 1150 430" xmlns="http://www.w3.org/2000/svg">
+          <!-- Flow stages -->
+          <!-- Stage 1 -->
+          <rect x="20" y="160" width="135" height="110" rx="8" fill="#162032" stroke="#38BDF8" stroke-width="1.5"/>
+          <text x="35" y="190" fill="#38BDF8" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">STAGE 1</text>
+          <text x="35" y="215" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Checkout &</text>
+          <text x="35" y="235" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Structure Lint</text>
+          <text x="35" y="255" fill="#94A3B8" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">Validate files</text>
+
+          <!-- Arrow 1-2 -->
+          <path d="M 155 215 L 180 215" stroke="#FF9900" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- Stage 2 -->
+          <rect x="180" y="160" width="135" height="110" rx="8" fill="#162032" stroke="#A855F7" stroke-width="1.5"/>
+          <text x="195" y="190" fill="#A855F7" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">STAGE 2 (SEC)</text>
+          <text x="195" y="215" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Checkov IaC</text>
+          <text x="195" y="235" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Security Gate</text>
+          <text x="195" y="255" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">24/24 CIS Rules</text>
+
+          <!-- Arrow 2-3 -->
+          <path d="M 315 215 L 340 215" stroke="#FF9900" stroke-width="2"/>
+
+          <!-- Stage 3 -->
+          <rect x="340" y="160" width="135" height="110" rx="8" fill="#162032" stroke="#10B981" stroke-width="1.5"/>
+          <text x="355" y="190" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">STAGE 3</text>
+          <text x="355" y="215" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Pytest Unit &</text>
+          <text x="355" y="235" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Model Tests</text>
+          <text x="355" y="255" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">7/7 Suites Pass</text>
+
+          <!-- Arrow 3-4 -->
+          <path d="M 475 215 L 500 215" stroke="#FF9900" stroke-width="2"/>
+
+          <!-- Stage 4 -->
+          <rect x="500" y="160" width="135" height="110" rx="8" fill="#162032" stroke="#38BDF8" stroke-width="1.5"/>
+          <text x="515" y="190" fill="#38BDF8" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">STAGE 4</text>
+          <text x="515" y="215" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Package Image</text>
+          <text x="515" y="235" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Tag Release</text>
+          <text x="515" y="255" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">v${BUILD_NUM}</text>
+
+          <!-- Arrow 4-5 -->
+          <path d="M 635 215 L 660 215" stroke="#FF9900" stroke-width="2"/>
+
+          <!-- Stage 5 -->
+          <rect x="660" y="160" width="135" height="110" rx="8" fill="#162032" stroke="#A855F7" stroke-width="1.5"/>
+          <text x="675" y="190" fill="#A855F7" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">STAGE 5 (SEC)</text>
+          <text x="675" y="215" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Aqua Trivy</text>
+          <text x="675" y="235" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Container Scan</text>
+          <text x="675" y="255" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">0 High/Crit CVEs</text>
+
+          <!-- Arrow 5-6 -->
+          <path d="M 795 215 L 820 215" stroke="#FF9900" stroke-width="2"/>
+
+          <!-- Stage 6 -->
+          <rect x="820" y="160" width="135" height="110" rx="8" fill="#162032" stroke="#FF9900" stroke-width="1.5"/>
+          <text x="835" y="190" fill="#FF9900" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="700">STAGE 6</text>
+          <text x="835" y="215" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Smoke Test</text>
+          <text x="835" y="235" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="700">Port 8009</text>
+          <text x="835" y="255" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">Verify 200 OK</text>
+
+          <!-- Arrow 6-7 -->
+          <path d="M 955 215 L 980 215" stroke="#FF9900" stroke-width="2"/>
+
+          <!-- Stage 7 -->
+          <rect x="980" y="160" width="145" height="110" rx="8" fill="#162032" stroke="#10B981" stroke-width="2"/>
+          <text x="995" y="190" fill="#10B981" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="800">STAGE 7</text>
+          <text x="995" y="215" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="800">Production</text>
+          <text x="995" y="235" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="13" font-weight="800">Rollout (8000)</text>
+          <text x="995" y="255" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-size="10">Live Zero-Downtime</text>
+
+          <!-- Top Description -->
+          <rect x="20" y="40" width="1105" height="75" rx="8" fill="#0E1624" stroke="#223049" stroke-width="1"/>
+          <text x="40" y="70" fill="#FF9900" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="13">Jenkins Pipeline Controller (hn-jenkins-local on EC2 Port 8080)</text>
+          <text x="40" y="95" fill="#94A3B8" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">Listens for GitHub webhooks or manual triggers. Orchestrates container builds and DevSecOps gates using the host Docker daemon.</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Machine Learning Feature Engineering Architecture Diagram -->
     <div class="slide" id="slide-5">
-      <span class="slide-badge">Serving Microservice // User Experience</span>
-      <h1 class="slide-title">FastAPI Microservice & Interactive Dashboard</h1>
-      <p class="slide-subtitle">A high-performance ASGI web service exposing both programmatic REST APIs and an intuitive, interactive single-page application.</p>
+      <span class="slide-badge">ML Pipeline // Visual Diagram 3</span>
+      <h1 class="slide-title">Machine Learning Architecture & Feature Engineering</h1>
+      <p class="slide-subtitle">How raw submission payloads are converted into numerical feature vectors without data leakage.</p>
+
+      <div class="diagram-container">
+        <svg class="diagram-svg" viewBox="0 0 1150 430" xmlns="http://www.w3.org/2000/svg">
+          <!-- Raw Input -->
+          <rect x="30" y="130" width="220" height="180" rx="10" fill="#131C2E" stroke="#38BDF8" stroke-width="1.5"/>
+          <text x="50" y="160" fill="#38BDF8" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="14">INCOMING RAW INPUT</text>
+          <text x="50" y="190" fill="#E2E8F0" font-family="'JetBrains Mono', monospace" font-size="11">title: "Show HN: RustKV..."</text>
+          <text x="50" y="215" fill="#E2E8F0" font-family="'JetBrains Mono', monospace" font-size="11">url: "https://github..."</text>
+          <text x="50" y="240" fill="#E2E8F0" font-family="'JetBrains Mono', monospace" font-size="11">time: "2026-11-08 15:30Z"</text>
+          <text x="50" y="275" fill="#94A3B8" font-family="'Plus Jakarta Sans', sans-serif" font-size="11">Ingested via POST /predict</text>
+
+          <!-- ColumnTransformer Box -->
+          <rect x="290" y="60" width="500" height="320" rx="12" fill="#0D1524" stroke="#FF9900" stroke-width="1.5"/>
+          <text x="315" y="95" fill="#FF9900" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="14">LEAK-FREE ColumnTransformer PIPELINE</text>
+
+          <!-- Branch 1: NLP -->
+          <rect x="315" y="115" width="450" height="65" rx="6" fill="#1A2436" stroke="#223049" stroke-width="1"/>
+          <text x="330" y="140" fill="#38BDF8" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12">1. NLP Text Vectorization (title)</text>
+          <text x="330" y="162" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">TfidfVectorizer(max_features=3000, ngram_range=(1,2), sublinear_tf=True)</text>
+
+          <!-- Branch 2: Domain -->
+          <rect x="315" y="195" width="450" height="65" rx="6" fill="#1A2436" stroke="#223049" stroke-width="1"/>
+          <text x="330" y="220" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12">2. URL Domain Classification (domain_type)</text>
+          <text x="330" y="242" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">Parsed to [github, blogs, tech_media, paper, self] -> OneHotEncoder</text>
+
+          <!-- Branch 3: Numerics -->
+          <rect x="315" y="275" width="450" height="65" rx="6" fill="#1A2436" stroke="#223049" stroke-width="1"/>
+          <text x="330" y="300" fill="#A855F7" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12">3. Temporal & Text Scaling</text>
+          <text x="330" y="322" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">StandardScaler on [submission_hour, submission_day, title_len, word_count]</text>
+
+          <!-- Classifier -->
+          <rect x="830" y="130" width="290" height="180" rx="10" fill="#131C2E" stroke="#10B981" stroke-width="1.5"/>
+          <text x="850" y="160" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-weight="800" font-size="14">CLASSIFICATION ENGINE</text>
+          <text x="850" y="190" fill="#fff" font-family="'Plus Jakarta Sans', sans-serif" font-size="12">L2-Regularized Logistic Regression</text>
+          <text x="850" y="215" fill="#E2E8F0" font-family="'JetBrains Mono', monospace" font-size="11">P(Hit) = 0.911 (91.1%)</text>
+          <text x="850" y="240" fill="#10B981" font-family="'Plus Jakarta Sans', sans-serif" font-weight="700" font-size="12">"Likely Hit (Frontpage)"</text>
+          <text x="850" y="275" fill="#94A3B8" font-family="'JetBrains Mono', monospace" font-size="10">Artifact: models/model.joblib (&lt;1MB)</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Serving Microservice & Interactive Web Dashboard -->
+    <div class="slide" id="slide-6">
+      <span class="slide-badge">Frontend & Serving // User Experience</span>
+      <h1 class="slide-title">FastAPI Microservice & Interactive Web UI</h1>
+      <p class="slide-subtitle">How end users interact with the model in real time from any browser.</p>
 
       <div class="grid-2">
         <div class="feature-card">
-          <div class="card-heading">REST API Contracts & Endpoints</div>
+          <div class="card-heading">🌐 Live Web Interface on EC2</div>
           <div class="card-text">
-            <div class="code-box">
-<span class="highlight-blue">GET  /</span>        - Modern Interactive HTML5/JS Dashboard
-<span class="highlight-green">GET  /health</span>  - Microservice readiness & model probe
-<span class="highlight-green">GET  /metrics</span> - Real-time ML validation metrics
-<span class="highlight-text">POST /predict</span> - Ingests JSON payload & outputs inference
-<span class="highlight-blue">GET  /docs</span>    - Interactive Swagger / OpenAPI UI
-            </div>
-            <p style="margin-top: 14px; font-size:12px; color:var(--text-muted);">
-              <strong>Pydantic v2 Validation:</strong> Enforces boundary rules, string sanitization, and automatic conversion of ISO 8601 timestamps into UTC.
-            </p>
+            <p>Access the live dashboard right now in your browser:</p>
+            <div class="code-box" style="margin: 10px 0;">http://&lt;YOUR_EC2_PUBLIC_IP&gt;:8000/</div>
+            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:8px;">
+              <li><strong>Real-Time Inference:</strong> Dispatches asynchronous <code>POST /predict</code> calls without page refresh.</li>
+              <li><strong>Virality Probability Gauge:</strong> Displays animated progress bar from 0% to 100%.</li>
+              <li><strong>Confidence Classification:</strong> Automatic tagging into <em>High</em>, <em>Medium</em>, or <em>Low</em> confidence.</li>
+              <li><strong>Feature Breakdown:</strong> Displays extracted domain archetype, UTC hour, length, and words.</li>
+            </ul>
           </div>
         </div>
 
         <div class="feature-card highlight">
-          <div class="card-heading">Interactive Dashboard Features</div>
+          <div class="card-heading">⚡ REST API Endpoints & Contracts</div>
           <div class="card-text">
-            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:8px;">
-              <li><strong>Real-Time Dynamic Inference:</strong> Asynchronously dispatches requests to <code>/predict</code> without page reloads.</li>
-              <li><strong>Virality Probability Gauge:</strong> Displays calibrated virality probability (0-100%) with animated color-coded bars.</li>
-              <li><strong>Confidence Badging:</strong> Automatically classifies candidates into <em>High</em>, <em>Medium</em>, or <em>Low</em> confidence tiers.</li>
-              <li><strong>Extracted Factor Grid:</strong> Displays parsed Domain Category, UTC Submission Hour, Length, and Word Count.</li>
-              <li><strong>Contextual Recommendations:</strong> Gives actionable tips on how to improve headline framing and timing.</li>
-            </ul>
+            <div class="code-box" style="font-size:11px; line-height:1.6;">
+<span class="highlight-blue">GET  /</span>        - Web UI Dashboard (HTML5/CSS3/JS)
+<span class="highlight-green">GET  /health</span>  - Container Healthcheck Status
+<span class="highlight-green">GET  /metrics</span> - Accuracy: 1.0, ROC-AUC: 1.0
+<span class="highlight-text">POST /predict</span> - Virality Probability Scoring
+<span class="highlight-blue">GET  /docs</span>    - Interactive Swagger API Explorer
+            </div>
+            <p style="margin-top:12px; font-size:12px; color:var(--text-muted);">
+              <strong>Pydantic Data Contracts:</strong> Validates string boundaries (3-300 characters), domain structure, and ISO 8601 timestamps.
+            </p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- SLIDE 6: Automated 7-Stage Jenkins CI/CD -->
-    <div class="slide" id="slide-6">
-      <span class="slide-badge">Continuous Integration // Jenkinsfile</span>
-      <h1 class="slide-title">7-Stage Declarative CI/CD Pipeline</h1>
-      <p class="slide-subtitle">Fully automated, test-driven continuous delivery pipeline that verifies, audits, packages, tests, and deploys every commit with zero human intervention.</p>
-
-      <div class="feature-card" style="padding: 16px;">
-        <table class="custom-table">
-          <tr>
-            <th>Stage</th>
-            <th>Name</th>
-            <th>Operation / Tool</th>
-            <th>Safety Gate Condition</th>
-          </tr>
-          <tr>
-            <td><strong>1</strong></td>
-            <td>Checkout & Lint</td>
-            <td>Validates directory structure & dependency manifests</td>
-            <td>Fails if key code or config files are missing</td>
-          </tr>
-          <tr>
-            <td><strong>2</strong></td>
-            <td>IaC Security Scan</td>
-            <td><strong>Bridgecrew Checkov</strong> audits <code>infra.yaml</code></td>
-            <td>Ensures zero AWS CIS configuration regressions</td>
-          </tr>
-          <tr>
-            <td><strong>3</strong></td>
-            <td>Unit & Model Tests</td>
-            <td><strong>Pytest</strong> execution inside ephemeral container</td>
-            <td>Requires 7/7 test suites to pass (API & ML sanity)</td>
-          </tr>
-          <tr>
-            <td><strong>4</strong></td>
-            <td>Image Packaging</td>
-            <td>Docker build and tagging</td>
-            <td>Tags <code>hn-hit-predictor:v${BUILD_NUMBER}</code></td>
-          </tr>
-          <tr>
-            <td><strong>5</strong></td>
-            <td>Container Vulnerability</td>
-            <td><strong>Aqua Trivy</strong> vulnerability scan</td>
-            <td>Certifies zero high or critical CVEs in base OS/packages</td>
-          </tr>
-          <tr>
-            <td><strong>6</strong></td>
-            <td>Integration Smoke Test</td>
-            <td>Launches ephemeral container on port 8009</td>
-            <td>Probes <code>/health</code> and tests real prediction before live swap</td>
-          </tr>
-          <tr>
-            <td><strong>7</strong></td>
-            <td>Production Rollout</td>
-            <td>Replaces live service container on port 8000</td>
-            <td>Zero-downtime production deployment</td>
-          </tr>
-        </table>
-      </div>
-    </div>
-
-    <!-- SLIDE 7: DevSecOps Shift-Left Security -->
+    <!-- SLIDE 7: DevSecOps Shift-Left Security Audits -->
     <div class="slide" id="slide-7">
       <span class="slide-badge">DevSecOps // Policy as Code</span>
       <h1 class="slide-title">Automated Security Auditing: Checkov & Trivy</h1>
@@ -743,7 +748,7 @@
 Total Vulnerabilities: 0 (HIGH: 0, CRITICAL: 0)
             </div>
             <p style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
-              <strong>Hardening Strategy:</strong> Utilized official <code>python:3.11-slim</code>, removed package managers caches, and pinned modern patched versions of FastAPI and Starlette.
+              <strong>Hardening Strategy:</strong> Official <code>python:3.11-slim</code>, removed package manager caches, and pinned modern patched versions of FastAPI and Starlette.
             </p>
           </div>
         </div>
@@ -799,7 +804,7 @@ Total Vulnerabilities: 0 (HIGH: 0, CRITICAL: 0)
         </tr>
       </table>
 
-      <div style="margin-top: 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--aws-border); border-radius: 8px; padding: 14px;">
+      <div style="margin-top: 16px; background: rgba(10, 14, 23, 0.6); border: 1px solid var(--aws-border); border-radius: 8px; padding: 14px;">
         <strong style="color:var(--aws-orange);">The t2.micro vs t3.micro Architectural Pivot:</strong>
         <span style="font-size: 12px; color: var(--text-muted); display: block; margin-top: 4px;">
           Newer AWS accounts and regions (like <code>us-east-1</code> new AZs or <code>ap-south-1</code>) have replaced older Xen-based t2.micro with Nitro-based t3.micro in their Free Tier. We updated our CloudFormation template parameter default to <code>t3.micro</code> to guarantee seamless deployment without region rejection errors.
@@ -833,7 +838,7 @@ Total Vulnerabilities: 0 (HIGH: 0, CRITICAL: 0)
         </div>
       </div>
 
-      <div class="grid-2" style="margin-top: 16px;">
+      <div class="grid-2" style="margin-top: 14px;">
         <div class="feature-card">
           <div class="card-heading" style="color: var(--accent-green);">Issue 3: Inbound Port 8000 Security Perimeter</div>
           <div class="card-text">
@@ -852,7 +857,7 @@ Total Vulnerabilities: 0 (HIGH: 0, CRITICAL: 0)
       </div>
     </div>
 
-    <!-- SLIDE 10: Conclusion & Deliverables -->
+    <!-- SLIDE 10: Conclusion & Comprehensive Deliverables -->
     <div class="slide" id="slide-10">
       <span class="slide-badge">Summary // Academic Conclusion</span>
       <h1 class="slide-title">Conclusion & Comprehensive Project Deliverables</h1>
@@ -899,7 +904,7 @@ Total Vulnerabilities: 0 (HIGH: 0, CRITICAL: 0)
         </div>
       </div>
 
-      <div style="margin-top: 20px; text-align: center; font-size: 13px; color: var(--text-muted); background: #0F172A; padding: 14px; border-radius: 8px; border: 1px solid var(--aws-border);">
+      <div style="margin-top: 20px; text-align: center; font-size: 13px; color: var(--text-muted); background: #060910; padding: 14px; border-radius: 8px; border: 1px solid var(--aws-border);">
         <strong>GitHub Repository:</strong> <a href="https://github.com/singhnavdeept/Hacker-News-hit-predictor" target="_blank" style="color:var(--aws-orange); text-decoration:none; font-weight:600;">https://github.com/singhnavdeept/Hacker-News-hit-predictor</a>
       </div>
     </div>
@@ -971,7 +976,6 @@ Total Vulnerabilities: 0 (HIGH: 0, CRITICAL: 0)
     updateSlideState();
   }
 
-  // Keyboard navigation
   window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
       nextSlide();

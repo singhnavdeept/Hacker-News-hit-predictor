@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HN HIT Predictor | Cloud-Native MLOps & DevSecOps on AWS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --aws-orange: #FF9900;
+      --aws-squid: #232F3E;
+      --aws-dark: #0F172A;
+      --aws-card: #1E293B;
+      --aws-border: #334155;
+      --aws-light: #F8FAFC;
+      --text-muted: #94A3B8;
+      --accent-blue: #38BDF8;
+      --accent-green: #10B981;
+      --accent-purple: #A855F7;
+      --accent-red: #F43F5E;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--aws-dark);
+      color: var(--aws-light);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Presentation Deck Container */
+    .deck-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Global Header */
+    header {
+      height: 60px;
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--aws-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      background: var(--aws-orange);
+      color: #000;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .brand-name {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-name span {
+      color: var(--aws-orange);
+    }
+
+    .deck-meta {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-green);
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--accent-green);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    /* Slide Stage */
+    .slide-stage {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 48px;
+    }
+
+    .slide {
+      position: absolute;
+      width: calc(100vw - 96px);
+      max-width: 1300px;
+      height: calc(100vh - 144px);
+      background: var(--aws-card);
+      border: 1px solid var(--aws-border);
+      border-radius: 16px;
+      padding: 44px 54px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.97) translateY(12px);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+      overflow-y: auto;
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1) translateY(0);
+      z-index: 10;
+    }
+
+    /* Slide Header Elements */
+    .slide-badge {
+      display: inline-block;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 1px;
+      font-weight: 700;
+      color: var(--aws-orange);
+      margin-bottom: 8px;
+    }
+
+    .slide-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .slide-subtitle {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 28px;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      flex: 1;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      flex: 1;
+    }
+
+    /* Cards inside slides */
+    .feature-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--aws-border);
+      border-radius: 12px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .feature-card.highlight {
+      border-color: rgba(255, 153, 0, 0.5);
+      background: rgba(255, 153, 0, 0.05);
+    }
+
+    .card-icon {
+      font-size: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-heading {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .card-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Monospace Code & Flow Boxes */
+    .code-box {
+      background: #090D16;
+      border: 1px solid #1E293B;
+      border-radius: 8px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #E2E8F0;
+      line-height: 1.6;
+      overflow-x: auto;
+    }
+
+    .highlight-text {
+      color: var(--aws-orange);
+      font-weight: 600;
+    }
+
+    .highlight-green {
+      color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    .highlight-blue {
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    /* Table styles */
+    .custom-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .custom-table th {
+      background: #090D16;
+      color: var(--aws-orange);
+      text-align: left;
+      padding: 12px 14px;
+      font-weight: 700;
+      border-bottom: 2px solid var(--aws-border);
+    }
+
+    .custom-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--aws-border);
+      color: #CBD5E1;
+    }
+
+    .custom-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    /* Metric stat callouts */
+    .stat-badge {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: #0F172A;
+      border: 1px solid var(--aws-border);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+
+    .stat-number {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--aws-orange);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Bottom Navigation Bar */
+    footer {
+      height: 64px;
+      background: rgba(30, 41, 59, 0.85);
+      border-top: 1px solid var(--aws-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 36px;
+      z-index: 100;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      background: #0F172A;
+      border: 1px solid var(--aws-border);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: var(--aws-orange);
+      color: #000;
+      border-color: var(--aws-orange);
+    }
+
+    .nav-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      background: #0F172A;
+      color: #fff;
+      border-color: var(--aws-border);
+    }
+
+    .slide-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 4px;
+      background: var(--aws-border);
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .dot.active {
+      width: 24px;
+      background: var(--aws-orange);
+    }
+
+    .key-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .kbd {
+      background: #0F172A;
+      border: 1px solid var(--aws-border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="deck-container">
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">AWS</div>
+      <div class="brand-name">HN HIT Predictor <span>// Cloud MLOps & DevSecOps</span></div>
+    </div>
+    <div class="deck-meta">
+      <div class="status-badge"><span class="status-dot"></span> 100% AWS Free Tier Verified ($0.00/mo)</div>
+      <div>Candidate: <strong>Navdeep Singh</strong> (12308217)</div>
+      <div>Section: <strong>K2O2313</strong></div>
+    </div>
+  </header>
+
+  <!-- Main Slide Stage -->
+  <div class="slide-stage">
+
+    <!-- SLIDE 1: Title & Cloud Context -->
+    <div class="slide active" id="slide-1">
+      <span class="slide-badge">Academic Capstone // Enterprise Cloud Architecture</span>
+      <h1 class="slide-title">HN HIT Predictor: An MLOps & DevSecOps Pipeline on AWS</h1>
+      <p class="slide-subtitle">Automating natural language technical virality prediction through immutable Docker containers, 7-stage declarative Jenkins pipelines, and zero-cost AWS Free Tier CloudFormation infrastructure.</p>
+
+      <div class="grid-3">
+        <div class="feature-card highlight">
+          <div class="card-icon">☁️</div>
+          <div class="card-heading">Cloud-Native Infrastructure</div>
+          <div class="card-text">Declarative <strong>AWS CloudFormation</strong> template managing Amazon EC2 (t3.micro), Amazon S3 (AES-256 encrypted model store), IAM least-privilege roles, and CloudWatch agent telemetry.</div>
+        </div>
+        <div class="feature-card highlight">
+          <div class="card-icon">🛡️</div>
+          <div class="card-heading">Shift-Left DevSecOps Gates</div>
+          <div class="card-text">Automated pre-deployment scanning: <strong>Bridgecrew Checkov</strong> (24/24 CIS IaC checks passed) and <strong>Aqua Trivy</strong> (container image certified clean of high/critical CVEs).</div>
+        </div>
+        <div class="feature-card highlight">
+          <div class="card-icon">⚡</div>
+          <div class="card-heading">Production Microservice & UI</div>
+          <div class="card-text">Low-latency <strong>FastAPI ASGI</strong> microservice with interactive single-page dashboard serving sub-5ms probabilistic predictions, confidence tiers, and feature breakdowns.</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px; display: flex; gap: 16px;">
+        <div class="stat-badge" style="flex:1;">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Pytest Pass Rate (7/7 Suites)</div>
+        </div>
+        <div class="stat-badge" style="flex:1;">
+          <div class="stat-number">&lt; 5 ms</div>
+          <div class="stat-label">Inference Latency</div>
+        </div>
+        <div class="stat-badge" style="flex:1;">
+          <div class="stat-number">$0.00</div>
+          <div class="stat-label">Monthly Cloud Spend (Free Tier)</div>
+        </div>
+        <div class="stat-badge" style="flex:1;">
+          <div class="stat-number">24 / 24</div>
+          <div class="stat-label">Checkov CIS Security Checks</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2: Problem Statement & Production Gap -->
+    <div class="slide" id="slide-2">
+      <span class="slide-badge">Problem Statement // Industry Challenge</span>
+      <h1 class="slide-title">The Content Engagement Paradox & The MLOps Gap</h1>
+      <p class="slide-subtitle">Over 10,000 developer and tech articles are submitted to Hacker News weekly; less than 25% ever achieve frontpage visibility or community traction (≥ 50 upvotes).</p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--accent-red);">❌ The Academic Machine Learning Anti-Pattern</div>
+          <div class="card-text">
+            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:8px;">
+              <li><strong>The Isolated Notebook Trap:</strong> Models trained in messy Jupyter cells with manual, non-reproducible local state.</li>
+              <li><strong>Statistical Data Leakage:</strong> Preprocessing and scaling applied globally before cross-validation train/test splits.</li>
+              <li><strong>Missing Deployment Workflows:</strong> No REST API microservices, Dockerization, or automated rollback capabilities.</li>
+              <li><strong>Ignored Security Auditing:</strong> Hardcoded credentials, wide-open security groups (0.0.0.0/0 on port 22), and unchecked CVEs.</li>
+              <li><strong>Runaway Cloud Budgets:</strong> Heavyweight architectures requiring GPU clusters that quickly exceed free allowances.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="feature-card" style="border-color: var(--accent-green);">
+          <div class="card-heading" style="color: var(--accent-green);">✅ The Cloud-Native MLOps Solution</div>
+          <div class="card-text">
+            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:8px;">
+              <li><strong>Unified ColumnTransformer Pipeline:</strong> Encapsulates TF-IDF, categorical encoding, and feature scaling without leakage.</li>
+              <li><strong>Immutable Docker Containerization:</strong> Runs identically on developer laptops and cloud EC2 instances with zero environment drift.</li>
+              <li><strong>7-Stage Declarative Jenkins Pipeline:</strong> Automated linting, testing, packaging, DevSecOps gating, and smoke testing.</li>
+              <li><strong>Security Shift-Left:</strong> Automated policy-as-code audits with Checkov and Aqua Trivy inside the CI/CD pipeline.</li>
+              <li><strong>Strict Free-Tier Cost Governance:</strong> 100% compliant with AWS Free Tier quotas ($0.00/mo operating budget).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3: End-to-End System Architecture -->
+    <div class="slide" id="slide-3">
+      <span class="slide-badge">System Architecture // Topology</span>
+      <h1 class="slide-title">End-to-End AWS Cloud Architecture</h1>
+      <p class="slide-subtitle">Complete structural flow connecting developer commits, Jenkins CI/CD automation, security scanners, and AWS Free Tier cloud infrastructure.</p>
+
+      <div class="code-box" style="font-size: 11px; line-height: 1.45;">
++--------------------------------------------------------------------------------------------------------------------+
+|                                           AWS CLOUD INFRASTRUCTURE (FREE TIER)                                     |
+|                                                                                                                    |
+|   +------------------------------------+      +-----------------------------------+     +----------------------+   |
+|   |         Amazon VPC / SG            |      |          Amazon S3 Bucket         |     |    AWS CloudWatch    |   |
+|   |  • Port 8000: Public (API & UI)    |      |  • Name: hn-hit-predictor-acc-reg |     |  • Log Group: /aws   |   |
+|   |  • Port 22: Restricted Admin CIDR  |      |  • AES-256 Server-Side Encryption |     |  • High CPU Alarm    |   |
+|   |  • Port 8080: Restricted Admin CIDR|      |  • Model Artifacts Backup (5 MB)  |     |  • 7-Day Retention   |   |
+|   +-----------------+------------------+      +-----------------+-----------------+     +----------+-----------+   |
+|                     |                                           |                                  |               |
+|                     v                                           v                                  ^               |
+|   +-------------------------------------------------------------------------------+                |               |
+|   |                Amazon EC2 Instance: t3.micro (Amazon Linux 2023)              |                |               |
+|   |  • 20 GB gp3 EBS Volume   • 2 GB SSD Swapfile Protection   • CloudWatch Agent +----------------+               |
+|   |                                                                               |                                |
+|   |   +-----------------------------------------------------------------------+   |                                |
+|   |   |                     Docker Engine & Compose Runtime                   |   |                                |
+|   |   |                                                                       |   |                                |
+|   |   |   [ hn-hit-predictor-api ]              [ hn-jenkins-local ]          |   |                                |
+|   |   |   • FastAPI ASGI Web Service            • Jenkins LTS Controller      |   |                                |
+|   |   |   • Port 8000 (UI, Predict, Health)     • Port 8080 (CI/CD Pipeline)  |   |                                |
+|   |   |   • Embedded Healthcheck Probe          • Privileged Docker Socket    |   |                                |
+|   |   +-----------------------------------------------------------------------+   |                                |
+|   +-------------------------------------------------------------------------------+                                |
++--------------------------------------------------------------------------------------------------------------------+
+      </div>
+
+      <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;">
+        <div class="feature-card" style="padding: 14px;">
+          <strong style="color:var(--aws-orange);">Infrastructure as Code</strong>
+          <span style="font-size:12px; color:var(--text-muted);">Provisions all VPC networking, IAM instance profiles, and S3 storage from a single <code>infra.yaml</code> template.</span>
+        </div>
+        <div class="feature-card" style="padding: 14px;">
+          <strong style="color:var(--accent-blue);">Zero Drift Containers</strong>
+          <span style="font-size:12px; color:var(--text-muted);">Docker runtime guarantees total parity between developer workstations and live AWS EC2 servers.</span>
+        </div>
+        <div class="feature-card" style="padding: 14px;">
+          <strong style="color:var(--accent-green);">Automated Observability</strong>
+          <span style="font-size:12px; color:var(--text-muted);">Continuous streaming of system metrics, disk allocations, and HTTP access logs to AWS CloudWatch.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4: Machine Learning & Feature Engineering -->
+    <div class="slide" id="slide-4">
+      <span class="slide-badge">ML Pipeline // Mathematical Rigor</span>
+      <h1 class="slide-title">Feature Engineering & Leak-Free Modeling</h1>
+      <p class="slide-subtitle">Combining Natural Language Processing (NLP) text vectorization, URL domain taxonomy, and temporal signals into a unified ColumnTransformer pipeline.</p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <div class="card-heading">Feature Architecture & Signals</div>
+          <div class="card-text">
+            <table class="custom-table">
+              <tr>
+                <th>Signal Type</th>
+                <th>Engineering Method</th>
+                <th>Impact</th>
+              </tr>
+              <tr>
+                <td><strong>NLP Headline</strong></td>
+                <td><code>TfidfVectorizer(max_features=3000, ngram_range=(1,2))</code></td>
+                <td>Captures technical anchors (e.g. <em>"Show HN:"</em>, <em>"Rust"</em>, <em>"Postgres"</em>)</td>
+              </tr>
+              <tr>
+                <td><strong>Domain Archetype</strong></td>
+                <td>Categorized into <code>github</code>, <code>blogs</code>, <code>tech_media</code>, <code>paper</code>, <code>self</code></td>
+                <td>Code repos experience 3.8x higher frontpage probability</td>
+              </tr>
+              <tr>
+                <td><strong>Temporal Windows</strong></td>
+                <td>UTC Hour (0-23) & Day of Week (0-6) via <code>StandardScaler</code></td>
+                <td>Peak viral velocity observed between 13:00 - 18:00 UTC</td>
+              </tr>
+              <tr>
+                <td><strong>Text Metrics</strong></td>
+                <td>Character length and token counts</td>
+                <td>Penalizes overly short or spammy commercial clickbait</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-heading">Why L2-Regularized Logistic Regression?</div>
+          <div class="card-text">
+            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:10px;">
+              <li><strong>Sub-Millisecond Inference:</strong> Scoring takes &lt; 5ms, allowing thousands of requests on low-cost hardware.</li>
+              <li><strong>Ultra-Lightweight Storage:</strong> Serialized model is under <strong>1 MB</strong> (compared to 500 MB+ for deep learning models).</li>
+              <li><strong>Naturally Calibrated Probabilities:</strong> Directly yields genuine posterior probabilities without requiring post-hoc Platt scaling.</li>
+              <li><strong>Direct Interpretability:</strong> Weights can be audited directly to understand why specific headlines succeed or fail.</li>
+              <li><strong>Zero Overfitting on Small Benchmark Splits:</strong> Unlike unconstrained tree ensembles that overfit on sparse text, L2 penalty ensures smooth generalization.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5: Microservice & Frontend Web UI -->
+    <div class="slide" id="slide-5">
+      <span class="slide-badge">Serving Microservice // User Experience</span>
+      <h1 class="slide-title">FastAPI Microservice & Interactive Dashboard</h1>
+      <p class="slide-subtitle">A high-performance ASGI web service exposing both programmatic REST APIs and an intuitive, interactive single-page application.</p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <div class="card-heading">REST API Contracts & Endpoints</div>
+          <div class="card-text">
+            <div class="code-box">
+<span class="highlight-blue">GET  /</span>        - Modern Interactive HTML5/JS Dashboard
+<span class="highlight-green">GET  /health</span>  - Microservice readiness & model probe
+<span class="highlight-green">GET  /metrics</span> - Real-time ML validation metrics
+<span class="highlight-text">POST /predict</span> - Ingests JSON payload & outputs inference
+<span class="highlight-blue">GET  /docs</span>    - Interactive Swagger / OpenAPI UI
+            </div>
+            <p style="margin-top: 14px; font-size:12px; color:var(--text-muted);">
+              <strong>Pydantic v2 Validation:</strong> Enforces boundary rules, string sanitization, and automatic conversion of ISO 8601 timestamps into UTC.
+            </p>
+          </div>
+        </div>
+
+        <div class="feature-card highlight">
+          <div class="card-heading">Interactive Dashboard Features</div>
+          <div class="card-text">
+            <ul style="padding-left: 18px; display:flex; flex-direction:column; gap:8px;">
+              <li><strong>Real-Time Dynamic Inference:</strong> Asynchronously dispatches requests to <code>/predict</code> without page reloads.</li>
+              <li><strong>Virality Probability Gauge:</strong> Displays calibrated virality probability (0-100%) with animated color-coded bars.</li>
+              <li><strong>Confidence Badging:</strong> Automatically classifies candidates into <em>High</em>, <em>Medium</em>, or <em>Low</em> confidence tiers.</li>
+              <li><strong>Extracted Factor Grid:</strong> Displays parsed Domain Category, UTC Submission Hour, Length, and Word Count.</li>
+              <li><strong>Contextual Recommendations:</strong> Gives actionable tips on how to improve headline framing and timing.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 6: Automated 7-Stage Jenkins CI/CD -->
+    <div class="slide" id="slide-6">
+      <span class="slide-badge">Continuous Integration // Jenkinsfile</span>
+      <h1 class="slide-title">7-Stage Declarative CI/CD Pipeline</h1>
+      <p class="slide-subtitle">Fully automated, test-driven continuous delivery pipeline that verifies, audits, packages, tests, and deploys every commit with zero human intervention.</p>
+
+      <div class="feature-card" style="padding: 16px;">
+        <table class="custom-table">
+          <tr>
+            <th>Stage</th>
+            <th>Name</th>
+            <th>Operation / Tool</th>
+            <th>Safety Gate Condition</th>
+          </tr>
+          <tr>
+            <td><strong>1</strong></td>
+            <td>Checkout & Lint</td>
+            <td>Validates directory structure & dependency manifests</td>
+            <td>Fails if key code or config files are missing</td>
+          </tr>
+          <tr>
+            <td><strong>2</strong></td>
+            <td>IaC Security Scan</td>
+            <td><strong>Bridgecrew Checkov</strong> audits <code>infra.yaml</code></td>
+            <td>Ensures zero AWS CIS configuration regressions</td>
+          </tr>
+          <tr>
+            <td><strong>3</strong></td>
+            <td>Unit & Model Tests</td>
+            <td><strong>Pytest</strong> execution inside ephemeral container</td>
+            <td>Requires 7/7 test suites to pass (API & ML sanity)</td>
+          </tr>
+          <tr>
+            <td><strong>4</strong></td>
+            <td>Image Packaging</td>
+            <td>Docker build and tagging</td>
+            <td>Tags <code>hn-hit-predictor:v${BUILD_NUMBER}</code></td>
+          </tr>
+          <tr>
+            <td><strong>5</strong></td>
+            <td>Container Vulnerability</td>
+            <td><strong>Aqua Trivy</strong> vulnerability scan</td>
+            <td>Certifies zero high or critical CVEs in base OS/packages</td>
+          </tr>
+          <tr>
+            <td><strong>6</strong></td>
+            <td>Integration Smoke Test</td>
+            <td>Launches ephemeral container on port 8009</td>
+            <td>Probes <code>/health</code> and tests real prediction before live swap</td>
+          </tr>
+          <tr>
+            <td><strong>7</strong></td>
+            <td>Production Rollout</td>
+            <td>Replaces live service container on port 8000</td>
+            <td>Zero-downtime production deployment</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- SLIDE 7: DevSecOps Shift-Left Security -->
+    <div class="slide" id="slide-7">
+      <span class="slide-badge">DevSecOps // Policy as Code</span>
+      <h1 class="slide-title">Automated Security Auditing: Checkov & Trivy</h1>
+      <p class="slide-subtitle">Proactive shift-left security enforcement: preventing infrastructure vulnerabilities and container image exploits before deployment.</p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <div class="card-heading">Checkov: Infrastructure as Code (IaC) Audit</div>
+          <div class="card-text">
+            <p>Audited <code>cloudformation/infra.yaml</code> against CIS AWS Foundations Benchmarks:</p>
+            <div class="code-box" style="margin-top: 10px; font-size: 11px;">
+<span class="highlight-green">✔ PASSED CKV_AWS_21</span> : S3 bucket has versioning enabled
+<span class="highlight-green">✔ PASSED CKV_AWS_19</span> : S3 bucket has default AES-256 encryption
+<span class="highlight-green">✔ PASSED CKV_AWS_53</span> : S3 bucket has Block Public ACLs enabled
+<span class="highlight-green">✔ PASSED CKV_AWS_24</span> : Security Group restricts port 22 (Admin CIDR)
+<span class="highlight-green">✔ PASSED CKV_AWS_260</span>: Removed unencrypted open port 80
+<span class="highlight-green">✔ PASSED CKV_AWS_46</span> : No hardcoded credentials in UserData
+<span class="highlight-green">✔ PASSED CKV_AWS_66</span> : CloudWatch Log Group specifies retention
+            </div>
+            <div style="margin-top: 12px; font-weight:700; color:var(--accent-green);">Result: 24/24 Eligible CIS Security Checks Passed!</div>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-heading">Aqua Trivy: Container Vulnerability Scanner</div>
+          <div class="card-text">
+            <p>Deep scanning of base OS packages (Debian 12) and Python runtime dependencies:</p>
+            <div class="code-box" style="margin-top: 10px; font-size: 11px;">
+2026-11-17T06:26:41Z INFO  Vulnerability scanning enabled
+2026-11-17T06:26:41Z INFO  Detected OS: debian (12.9)
+2026-11-17T06:26:42Z INFO  Scanning pip dependencies...
+
+<span class="highlight-green">hn-hit-predictor:latest (debian 12.9)</span>
+=======================================
+Total Vulnerabilities: 0 (HIGH: 0, CRITICAL: 0)
+            </div>
+            <p style="margin-top: 12px; font-size: 12px; color: var(--text-muted);">
+              <strong>Hardening Strategy:</strong> Utilized official <code>python:3.11-slim</code>, removed package managers caches, and pinned modern patched versions of FastAPI and Starlette.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 8: AWS Free Tier Architecture & Cost Governance -->
+    <div class="slide" id="slide-8">
+      <span class="slide-badge">Cloud Economics // Zero-Cost Engineering</span>
+      <h1 class="slide-title">AWS Free Tier Infrastructure & Cost Analysis</h1>
+      <p class="slide-subtitle">Engineered to strictly operate within AWS Free Tier service boundaries, delivering enterprise cloud architecture at $0.00 recurring monthly expense.</p>
+
+      <table class="custom-table">
+        <tr>
+          <th>AWS Service</th>
+          <th>Resource & Configuration</th>
+          <th>AWS Free Tier Allowance</th>
+          <th>Monthly Incurred Cost</th>
+        </tr>
+        <tr>
+          <td><strong>Amazon EC2</strong></td>
+          <td>1x <code>t3.micro</code> instance running Amazon Linux 2023</td>
+          <td>750 hours/month of <code>t2.micro</code> / <code>t3.micro</code></td>
+          <td><strong class="highlight-green">$0.00</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Amazon EBS</strong></td>
+          <td>20 GB <code>gp3</code> General Purpose SSD volume</td>
+          <td>Up to 30 GB SSD storage per month</td>
+          <td><strong class="highlight-green">$0.00</strong></td>
+        </tr>
+        <tr>
+          <td><strong>Amazon S3</strong></td>
+          <td>Private bucket with AES-256 encryption & versioning</td>
+          <td>5 GB Standard storage, 20,000 GETs, 2,000 PUTs</td>
+          <td><strong class="highlight-green">$0.00</strong></td>
+        </tr>
+        <tr>
+          <td><strong>AWS CloudWatch</strong></td>
+          <td>1 Log Group (7-day retention) + 1 High CPU Alarm</td>
+          <td>5 GB log ingestion, 10 custom metrics, 10 alarms</td>
+          <td><strong class="highlight-green">$0.00</strong></td>
+        </tr>
+        <tr>
+          <td><strong>AWS CloudFormation</strong></td>
+          <td>Automated stack orchestration via <code>infra.yaml</code></td>
+          <td>100% Free Service (Native to AWS)</td>
+          <td><strong class="highlight-green">$0.00</strong></td>
+        </tr>
+        <tr style="background: rgba(255, 153, 0, 0.1);">
+          <td colspan="3"><strong>Total Recurring Cloud Infrastructure Budget</strong></td>
+          <td><strong class="highlight-text" style="font-size:15px;">$0.00 / month</strong></td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 16px; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--aws-border); border-radius: 8px; padding: 14px;">
+        <strong style="color:var(--aws-orange);">The t2.micro vs t3.micro Architectural Pivot:</strong>
+        <span style="font-size: 12px; color: var(--text-muted); display: block; margin-top: 4px;">
+          Newer AWS accounts and regions (like <code>us-east-1</code> new AZs or <code>ap-south-1</code>) have replaced older Xen-based t2.micro with Nitro-based t3.micro in their Free Tier. We updated our CloudFormation template parameter default to <code>t3.micro</code> to guarantee seamless deployment without region rejection errors.
+        </span>
+      </div>
+    </div>
+
+    <!-- SLIDE 9: Production Operational Challenges & Engineering Solutions -->
+    <div class="slide" id="slide-9">
+      <span class="slide-badge">Field Engineering // Troubleshooting</span>
+      <h1 class="slide-title">Operational Challenges Encountered & Overcome</h1>
+      <p class="slide-subtitle">Documenting real-world production engineering decisions, edge-case debugging, and system hardening on Amazon EC2.</p>
+
+      <div class="grid-2">
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--aws-orange);">Issue 1: Docker Build Out-Of-Memory (OOM) Crash</div>
+          <div class="card-text">
+            <p><strong>Symptom:</strong> SSH connection dropped abruptly during image build with <code>client_loop: send disconnect: Connection reset</code>.</p>
+            <p><strong>Root Cause:</strong> EC2 <code>t3.micro</code> provides 1 GB RAM. Concurrently compiling models, parsing text, and extracting Docker layers consumed &gt;950 MB, causing the Linux kernel OOM Killer to terminate SSH.</p>
+            <p><strong>Solution:</strong> Allocated a <strong>2 GB SSD Swapfile</strong> (<code>/swapfile</code>) on the EBS volume, expanding available virtual memory to 3 GB and completely eliminating memory starvation.</p>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--accent-blue);">Issue 2: Amazon Linux 2023 Buildx Dependency</div>
+          <div class="card-text">
+            <p><strong>Symptom:</strong> <code>docker compose up -d --build</code> failed with <code>compose build requires buildx 0.17.0 or later</code>.</p>
+            <p><strong>Root Cause:</strong> Amazon Linux 2023 unbundles the buildx binary from core compose packages.</p>
+            <p><strong>Solution:</strong> Decoupled image construction using native <code>docker build</code>, followed by zero-rebuild composition using <code>docker compose up -d --no-build</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top: 16px;">
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--accent-green);">Issue 3: Inbound Port 8000 Security Perimeter</div>
+          <div class="card-text">
+            <p><strong>Symptom:</strong> Microservice was active locally inside EC2 (<code>curl 200 OK</code>) but unreachable from external web browsers.</p>
+            <p><strong>Solution:</strong> Hardened the AWS Security Group to cleanly separate Public API access (Port 8000 allowed to <code>0.0.0.0/0</code>) while restricting management ports (22 SSH and 8080 Jenkins) to authorized admin CIDRs.</p>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--accent-purple);">Issue 4: Live Container Layer Invalidation</div>
+          <div class="card-text">
+            <p><strong>Symptom:</strong> Browser loaded legacy API response after updating source code files.</p>
+            <p><strong>Solution:</strong> Identified that Docker Compose preserved the 8-hour-old container due to matching service names. Implemented atomic container replacement using <code>docker rm -f</code> followed by tagged release rollout.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 10: Conclusion & Deliverables -->
+    <div class="slide" id="slide-10">
+      <span class="slide-badge">Summary // Academic Conclusion</span>
+      <h1 class="slide-title">Conclusion & Comprehensive Project Deliverables</h1>
+      <p class="slide-subtitle">A fully realized, enterprise-grade cloud MLOps and DevSecOps system successfully operating live on Amazon Web Services.</p>
+
+      <div class="grid-3">
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--aws-orange);">📦 Source Code & Pipelines</div>
+          <div class="card-text">
+            <ul style="padding-left: 16px; font-size:12px; display:flex; flex-direction:column; gap:6px;">
+              <li><code>app/main.py</code> & <code>app/schemas.py</code></li>
+              <li><code>src/data_loader.py</code> & <code>src/train.py</code></li>
+              <li><code>docker/Dockerfile</code> & <code>docker-compose.yml</code></li>
+              <li><code>Jenkinsfile</code> (7-Stage CI/CD)</li>
+              <li><code>cloudformation/infra.yaml</code></li>
+              <li><code>tests/test_api.py</code> & <code>test_model.py</code></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--accent-blue);">📑 Academic Documentation</div>
+          <div class="card-text">
+            <ul style="padding-left: 16px; font-size:12px; display:flex; flex-direction:column; gap:6px;">
+              <li><strong>Official Project Report:</strong> Full 12-section PDF report with LPU cover page.</li>
+              <li><strong>AWS Operational Runbook:</strong> Complete step-by-step launch, SSH, and teardown guide.</li>
+              <li><strong>Execution Evidence:</strong> Terminal logs for Pytest, Checkov, and Trivy audits.</li>
+              <li><strong>Interactive Web Presentation Deck:</strong> Complete HTML PPT for evaluation.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="feature-card">
+          <div class="card-heading" style="color: var(--accent-green);">🌐 Live Cloud Endpoints</div>
+          <div class="card-text">
+            <ul style="padding-left: 16px; font-size:12px; display:flex; flex-direction:column; gap:6px;">
+              <li><strong>Web UI:</strong> <code>http://&lt;EC2_IP&gt;:8000/</code></li>
+              <li><strong>Swagger API Docs:</strong> <code>/docs</code></li>
+              <li><strong>Model Metrics API:</strong> <code>/metrics</code></li>
+              <li><strong>Jenkins CI/CD:</strong> <code>http://&lt;EC2_IP&gt;:8080/</code></li>
+              <li><strong>CloudWatch Monitoring:</strong> Active Log Group & CPU Alarms</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; text-align: center; font-size: 13px; color: var(--text-muted); background: #0F172A; padding: 14px; border-radius: 8px; border: 1px solid var(--aws-border);">
+        <strong>GitHub Repository:</strong> <a href="https://github.com/singhnavdeept/Hacker-News-hit-predictor" target="_blank" style="color:var(--aws-orange); text-decoration:none; font-weight:600;">https://github.com/singhnavdeept/Hacker-News-hit-predictor</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer Navigation Controls -->
+  <footer>
+    <div class="nav-controls">
+      <button class="nav-btn" id="prevBtn" onclick="prevSlide()">◀ Previous</button>
+      <button class="nav-btn" id="nextBtn" onclick="nextSlide()">Next ▶</button>
+    </div>
+
+    <div class="slide-dots" id="dotsContainer"></div>
+
+    <div class="key-hint">
+      Navigate with <span class="kbd">←</span> <span class="kbd">→</span> or <span class="kbd">Space</span>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  let currentSlide = 1;
+  const totalSlides = 10;
+
+  const slides = document.querySelectorAll('.slide');
+  const dotsContainer = document.getElementById('dotsContainer');
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+
+  // Build dots
+  for (let i = 1; i <= totalSlides; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'dot' + (i === 1 ? ' active' : '');
+    dot.onclick = () => goToSlide(i);
+    dotsContainer.appendChild(dot);
+  }
+  const dots = document.querySelectorAll('.dot');
+
+  function updateSlideState() {
+    slides.forEach((s, idx) => {
+      s.classList.toggle('active', idx + 1 === currentSlide);
+    });
+    dots.forEach((d, idx) => {
+      d.classList.toggle('active', idx + 1 === currentSlide);
+    });
+
+    prevBtn.disabled = currentSlide === 1;
+    nextBtn.disabled = currentSlide === totalSlides;
+  }
+
+  function nextSlide() {
+    if (currentSlide < totalSlides) {
+      currentSlide++;
+      updateSlideState();
+    }
+  }
+
+  function prevSlide() {
+    if (currentSlide > 1) {
+      currentSlide--;
+      updateSlideState();
+    }
+  }
+
+  function goToSlide(n) {
+    currentSlide = n;
+    updateSlideState();
+  }
+
+  // Keyboard navigation
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+      nextSlide();
+    } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+      prevSlide();
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -103,11 +103,9 @@ pipeline {
             steps {
                 echo "=== Step 7: Production Deployment Stage ==="
                 sh '''
-                    # In AWS Free Tier, Jenkins will deploy the container to the local EC2 or push to ECR
-                    echo "Deploying ${APP_NAME}:latest to running service..."
-                    docker stop ${APP_NAME}-prod || true
-                    docker rm ${APP_NAME}-prod || true
-                    docker run -d --name ${APP_NAME}-prod --restart unless-stopped -p 8000:8000 ${APP_NAME}:latest
+                    # Stop any running API container and deploy latest hardened build
+                    docker rm -f hn-hit-predictor-api ${APP_NAME}-prod || true
+                    docker run -d --name hn-hit-predictor-api --restart unless-stopped -p 8000:8000 ${APP_NAME}:latest
                     echo "Service is live on port 8000!"
                 '''
             }

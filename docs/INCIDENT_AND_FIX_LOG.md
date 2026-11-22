@@ -194,6 +194,51 @@ Pytest automatically loads `pytest.ini`, appends `.` to `sys.path`, and cleanly 
 
 ---
 
+## 📌 Incident 005: Pytest `test_predict_endpoint_success` 503 Service Unavailable (Model Artifact Missing in Clean CI)
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-22 |
+| **Component** | Test Suite (`tests/test_api.py`) |
+| **Severity** | **LOW (Test Suite Ordering Dependency)** |
+| **Detected By** | GitHub Actions Runner (`PYTHONPATH=. pytest -v tests/`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+Pytest failed on `test_predict_endpoint_success`:
+```text
+FAILED tests/test_api.py::test_predict_endpoint_success - assert 503 == 200
+where 503 = <Response [503 Service Unavailable]>.status_code
+
+Captured log setup:
+WARNING hn-hit-predictor:main.py Model file not found at .../models/model.joblib. Prediction requests will fail until trained.
+```
+
+### 2. Root Cause Analysis (RCA)
+- **Alphabetical Execution Order:** In pytest, `tests/test_api.py` executes before `tests/test_model.py`.
+- **Missing Artifact in Clean CI:** In a fresh CI checkout, the trained model artifact (`models/model.joblib`) does not exist until created. In previous runs, `test_model.py` trained the model during its run, which inadvertently satisfied subsequent runs if the directory was dirty. In a clean runner, `test_api.py` ran first against an empty `models/` directory.
+- Because `model.joblib` was missing, `load_model()` logged a warning and left `model_pipeline = None`.
+- The `/predict` route properly raised HTTP 503 Service Unavailable when invoked without an active model artifact.
+
+### 3. How Was It Fixed?
+1. **Created `tests/conftest.py` with Session Fixture:**
+   Added a session-scoped autouse fixture `setup_test_environment()` that verifies `models/model.joblib` exists before *any* test file runs. If missing, it immediately invokes `train_and_evaluate(force_synthetic=True)` (~0.5s execution time).
+2. **Hardened `tests/test_api.py`:**
+   Added an explicit check in `ensure_model_is_loaded()` to ensure model generation and loading prior to executing prediction assertions.
+
+### 4. Verification
+All 8 test cases pass cleanly (`8 passed in 1.8s`):
+- `tests/test_api.py::test_root_endpoint PASSED`
+- `tests/test_api.py::test_health_endpoint PASSED`
+- `tests/test_api.py::test_version_endpoint PASSED`
+- `tests/test_api.py::test_predict_endpoint_success PASSED`
+- `tests/test_api.py::test_predict_endpoint_validation_error PASSED`
+- `tests/test_model.py::test_extract_domain_type PASSED`
+- `tests/test_model.py::test_model_training_and_artifacts PASSED`
+- `tests/test_model.py::test_model_inference PASSED`
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

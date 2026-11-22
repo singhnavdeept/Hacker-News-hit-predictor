@@ -1,11 +1,15 @@
+import os
 import pytest
 from fastapi.testclient import TestClient
-from app.main import app, load_model
+from app.main import app, load_model, MODEL_PATH
+from src.train import train_and_evaluate
 
 client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def ensure_model_is_loaded():
+    if not os.path.exists(MODEL_PATH):
+        train_and_evaluate(force_synthetic=True)
     load_model()
 
 def test_root_endpoint():

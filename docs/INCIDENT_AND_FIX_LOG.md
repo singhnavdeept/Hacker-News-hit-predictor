@@ -276,6 +276,39 @@ GitHub Actions runner successfully resolves, downloads, and executes `aquasecuri
 
 ---
 
+## 📌 Incident 007: Aqua Trivy Container Scan Failure (Exit Code 1) — High CVEs in `zlib1g` and bundled `setuptools`
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-23 |
+| **Component** | Container Image Build (`docker/Dockerfile`) |
+| **Severity** | **HIGH** |
+| **Detected By** | CI/CD Gate 4 (`aquasecurity/trivy-action`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+Aqua Trivy scanned `hn-hit-predictor:<SHA>` with `--exit-code 1 --severity HIGH,CRITICAL --ignore-unfixed` and failed the pipeline with 3 HIGH vulnerabilities:
+1. **Debian OS package `zlib1g 1:1.3.dfsg+really1.3.1-1+b1` (`CVE-2026-85091`):**
+   - Heap buffer overflow in `gz_vacate()` allowing arbitrary code execution (Fixed in `1:1.3.dfsg+really1.3.1-1+deb13u1`).
+2. **Vendored Python library `jaraco.context 5.3.0` (`CVE-2026-23949`):**
+   - Path traversal via malicious tar archives (Fixed in `6.1.0`).
+3. **Vendored Python library `wheel 0.45.1` (`CVE-2026-24049`):**
+   - Privilege escalation / arbitrary code execution via malicious wheel file (Fixed in `0.46.2`).
+
+### 2. Root Cause Analysis (RCA)
+- **Stale Base Image OS Packages:** The Docker base image `python:3.11-slim` is based on Debian 13. While Debian released a security patch (`deb13u1`) for `zlib1g`, the base Docker image had not been refreshed. The Dockerfile only ran `apt-get install -y curl` without `apt-get upgrade -y`, leaving existing OS packages unpatched.
+- **Outdated Pre-installed Bundled Setuptools:** Python slim base images ship with a pre-installed `setuptools` (`79.0.1`) under `/usr/local/lib/python3.11/site-packages/`. This specific setuptools release vendored older versions of `jaraco.context` (5.3.0) and `wheel` (0.45.1). Even though top-level dependencies were upgraded, Trivy's deep scanner inspected `setuptools/_vendor/` and flagged the vendored code.
+
+### 3. How Was It Fixed?
+Updated `docker/Dockerfile`:
+1. Added `apt-get upgrade -y` to upgrade base Debian OS packages during image build, automatically updating `zlib1g` to `1:1.3.dfsg+really1.3.1-1+deb13u1`.
+2. Added `RUN pip install --no-cache-dir --upgrade pip "setuptools>=84.0.0" "wheel>=0.46.3"` prior to installing requirements, which replaces the legacy bundled setuptools with modern `setuptools 84.2.1+` (incorporating patched `jaraco.context 6.1.0+` and `wheel 0.46.3+`).
+
+### 4. Verification
+Rebuilding the image and scanning with Aqua Trivy reports **0 High/Critical vulnerabilities**.
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

@@ -11,10 +11,13 @@ ENV PYTHONPATH=/workspace
 ARG GIT_COMMIT=dev-local
 ENV GIT_COMMIT=${GIT_COMMIT}
 
-# Install curl for container health check
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Apply base OS security updates (patches CVE-2026-85091 in zlib1g) and install curl
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Upgrade core packaging tools (patches CVE-2026-23949 in jaraco.context and CVE-2026-24049 in wheel)
+RUN pip install --no-cache-dir --upgrade pip "setuptools>=84.0.0" "wheel>=0.46.3"
 
 # Install Python requirements
 COPY requirements.txt .

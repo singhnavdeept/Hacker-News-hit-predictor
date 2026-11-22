@@ -39,7 +39,7 @@ jobs:
         id: tofu_info
         working-directory: tofu/environments/prod
         run: |
-          tofu init
+          tofu init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
           INSTANCE_ID=$(tofu output -raw instance_id)
           PUBLIC_IP=$(tofu output -raw public_ip)
           echo "instance_id=${INSTANCE_ID}" >> $GITHUB_OUTPUT

@@ -107,30 +107,45 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Check AWS OIDC Role Secret
+        id: check_creds
+        run: |
+          if [ -z "${{ secrets.AWS_ROLE_ARN }}" ]; then
+            echo "configured=false" >> $GITHUB_OUTPUT
+            echo "::warning::AWS_ROLE_ARN secret not configured in repository secrets. Skipping cloud deployment."
+          else
+            echo "configured=true" >> $GITHUB_OUTPUT
+          fi
+
       # Configure AWS credentials through OIDC without stored access keys
       - name: Configure AWS Credentials (OIDC)
+        if: steps.check_creds.outputs.configured == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ap-south-1
 
       - name: Setup OpenTofu
+        if: steps.check_creds.outputs.configured == 'true'
         uses: opentofu/setup-opentofu@v1
         with:
           tofu_version: "1.8.0"
 
       - name: OpenTofu Init & Plan
+        if: steps.check_creds.outputs.configured == 'true'
         working-directory: tofu/environments/prod
         run: |
-          tofu init
+          tofu init -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
           tofu plan -no-color -out=tfplan
 
       - name: OpenTofu Apply
+        if: steps.check_creds.outputs.configured == 'true'
         working-directory: tofu/environments/prod
         run: |
           tofu apply -auto-approve tfplan
 
       - name: Capture OpenTofu Outputs
+        if: steps.check_creds.outputs.configured == 'true'
         id: tofu_outputs
         working-directory: tofu/environments/prod
         run: |
@@ -146,7 +161,7 @@ jobs:
     name: Deploy & Verify Rollout
     needs: infrastructure-tofu
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && needs.infrastructure-tofu.outputs.instance_id != '' && needs.infrastructure-tofu.outputs.instance_id != 'unknown'
     steps:
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4

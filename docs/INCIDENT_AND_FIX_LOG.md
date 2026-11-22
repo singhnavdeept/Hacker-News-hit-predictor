@@ -354,6 +354,53 @@ Trivy scans the hardened image with **0 vulnerabilities detected** across both O
 
 ---
 
+## 📌 Incident 009: Stage 3 `infrastructure-tofu` Failure — Unpopulated `AWS_ROLE_ARN` OIDC Secret
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-23 |
+| **Component** | CI/CD Pipeline (`.github/workflows/ci-cd.yml`) |
+| **Severity** | LOW (Deployment Configuration) |
+| **Detected By** | GitHub Actions Runner (`aws-actions/configure-aws-credentials@v4`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+After all 4 DevSecOps gates (Gitleaks, pip-audit, Checkov, Trivy) and Pytest passed 100% green, the pipeline advanced to Stage 3 (`infrastructure-tofu`). The step `Configure AWS Credentials (OIDC)` failed with:
+```text
+Run aws-actions/configure-aws-credentials@v4
+  with:
+    aws-region: ap-south-1
+    audience: sts.amazonaws.com
+    output-env-credentials: true
+Error: Neither role-to-assume nor aws-access-key-id are provided
+```
+
+### 2. Root Cause Analysis (RCA)
+- The GitHub Actions workflow references `${{ secrets.AWS_ROLE_ARN }}` to securely assume an AWS IAM Role via OpenID Connect (OIDC) without long-lived access keys.
+- Prior to running the bootstrap OpenTofu module or registering the secret in the GitHub repository (`Settings -> Secrets and variables -> Actions`), `${{ secrets.AWS_ROLE_ARN }}` evaluates to an empty string.
+- Because `aws-actions/configure-aws-credentials` requires a non-empty `role-to-assume`, the action aborted the job immediately.
+
+### 3. How Was It Fixed?
+1. **Graceful Secret Detection:** Added a pre-flight inspection step (`check_creds`) to `.github/workflows/ci-cd.yml` that detects if `AWS_ROLE_ARN` is populated in GitHub Secrets:
+   ```yaml
+   - name: Check AWS OIDC Role Secret
+     id: check_creds
+     run: |
+       if [ -z "${{ secrets.AWS_ROLE_ARN }}" ]; then
+         echo "configured=false" >> $GITHUB_OUTPUT
+         echo "::warning::AWS_ROLE_ARN secret not configured in repository secrets. Skipping cloud deployment."
+       else
+         echo "configured=true" >> $GITHUB_OUTPUT
+       fi
+   ```
+2. **Conditional Cloud Execution:** Guarded all subsequent OpenTofu apply and AWS SSM deploy steps with `if: steps.check_creds.outputs.configured == 'true'`, ensuring all DevSecOps scanning and container verification steps finish 100% green even before AWS credentials are provided.
+3. **Dynamic State Backend:** Added `-backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"` to `tofu init`.
+
+### 4. Verification
+The CI/CD pipeline runs all 4 DevSecOps gates, build checks, and unit tests to completion without failure, automatically executing cloud deployments whenever `AWS_ROLE_ARN` is present.
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

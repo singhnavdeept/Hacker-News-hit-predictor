@@ -145,6 +145,55 @@ Checkov static analysis scanned `tofu/modules/app_stack` and flagged 10 checks (
 
 ---
 
+## 📌 Incident 004: Pytest `ModuleNotFoundError: No module named 'app'/'src'` in CI Test Collection
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-22 |
+| **Component** | Test Suite Execution (`pytest`) |
+| **Severity** | **MEDIUM (CI Build Blocker)** |
+| **Detected By** | GitHub Actions Runner (`pytest -v tests/`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+During the `Run Pytest Suite & Model Validation` step in GitHub Actions, `pytest` crashed during test collection with:
+```text
+ImportError while importing test module 'tests/test_api.py':
+from app.main import app, load_model
+ModuleNotFoundError: No module named 'app'
+
+ImportError while importing test module 'tests/test_model.py':
+from src.train import train_and_evaluate, MODEL_PATH, METRICS_PATH
+ModuleNotFoundError: No module named 'src'
+```
+
+### 2. Root Cause Analysis (RCA)
+Inside Docker containers, `ENV PYTHONPATH=/workspace` was explicitly set. However, in the GitHub Actions runner (which executes pytest directly on the Linux host), Python's `sys.path` only contains site-packages and standard libraries — the project root directory was not in `sys.path`. Without explicit configuration, pytest could not resolve top-level packages `app` and `src`.
+
+### 3. How Was It Fixed?
+1. **Created `pytest.ini` in Repository Root:**
+   Utilized pytest's native rootdir resolution:
+   ```ini
+   [pytest]
+   pythonpath = .
+   testpaths = tests
+   filterwarnings =
+       ignore::DeprecationWarning
+       ignore::UserWarning
+   ```
+2. **Updated CI Workflow:**
+   Hardened the step in `.github/workflows/ci-cd.yml` to:
+   ```yaml
+   - name: Run Pytest Suite & Model Validation
+     run: |
+       PYTHONPATH=. pytest -v tests/
+   ```
+
+### 4. Verification
+Pytest automatically loads `pytest.ini`, appends `.` to `sys.path`, and cleanly collects and executes all tests across `tests/test_api.py` and `tests/test_model.py`.
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

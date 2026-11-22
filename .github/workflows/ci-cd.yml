@@ -58,7 +58,7 @@ jobs:
       # Functional Unit Tests & Sanity Checks
       - name: Run Pytest Suite & Model Validation
         run: |
-          pytest -v tests/
+          PYTHONPATH=. pytest -v tests/
 
   # --------------------------------------------------------------------
   # 2. Package Container & Container Security Scan (Aqua Trivy)

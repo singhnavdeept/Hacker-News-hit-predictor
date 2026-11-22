@@ -100,6 +100,50 @@ Both `pytest` and `requests` are upgraded beyond their vulnerability thresholds 
 
 ---
 
+## 📌 Incident 003: CI/CD Gate 3 Failure — Checkov IaC Security Violations on OpenTofu Stack
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-22 |
+| **Component** | `tofu/modules/app_stack/main.tf` |
+| **Severity** | **HIGH** |
+| **Detected By** | CI/CD Gate 3 (`checkov -d tofu/modules/app_stack`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+Checkov static analysis scanned `tofu/modules/app_stack` and flagged 10 checks (3 actionable security fixes + 7 enterprise policies conflicting with AWS Free Tier):
+- `CKV_AWS_382`: Security group allowed egress to `0.0.0.0/0` on port `-1` (all ports).
+- `CKV_AWS_26`: SNS topic data was not encrypted at rest.
+- `CKV2_AWS_61`: S3 artifacts bucket lacked lifecycle management configuration.
+- 7 enterprise checks that force paid non-free-tier services: KMS Customer Managed Keys ($1.00/month per key for S3 and CloudWatch), 365-day CloudWatch log retention (exceeds 5GB free tier), S3 cross-region replication, and S3 access logging.
+
+### 2. Root Cause Analysis (RCA)
+- **Egress:** The security group egress had default `protocol = "-1"` and `from_port = 0`, which violates CIS Benchmark egress filtering best practices.
+- **SNS:** The SNS topic lacked `kms_master_key_id`.
+- **S3 Lifecycle:** The bucket had versioning enabled but no expiration rules, risking long-term storage bloat from noncurrent model versions.
+- **Cost Guardrails vs Enterprise Rules:** In production enterprises, Customer Managed KMS keys and 1-year log retention are standard, but on an AWS Free Tier account, they trigger immediate monthly billing charges.
+
+### 3. How Was It Fixed?
+1. **Restricted Egress Security Group Rules:**
+   Replaced all-port egress with explicit rules allowing only:
+   - TCP Port `443` (HTTPS for AWS APIs, SSM, CloudWatch, and Docker Registry)
+   - TCP Port `80` (HTTP for Amazon Linux dnf package repository updates)
+2. **Encrypted SNS Topic with Zero Cost:**
+   Configured `kms_master_key_id = "alias/aws/sns"`, which uses AWS's built-in managed KMS key at **$0.00 cost**.
+3. **Implemented S3 Lifecycle Configuration:**
+   Added `aws_s3_bucket_lifecycle_configuration` expiring noncurrent versions after 90 days and aborting incomplete multipart uploads after 7 days.
+4. **Documented Inline Checkov Suppressions for Free Tier Cost Protection:**
+   Annotated cost-violating enterprise checks with `# checkov:skip=...` and technical rationales:
+   - `CKV_AWS_158` & `CKV_AWS_145`: Documented AES-256 / AWS-managed encryption to avoid $1.00/mo KMS CMK charges.
+   - `CKV_AWS_338`: Documented 7-day log retention to prevent breaching the 5GB Free Tier limit.
+   - `CKV_AWS_144` & `CKV_AWS_18`: Documented single-region Free Tier guardrails for cross-region replication and logging buckets.
+   - `CKV2_AWS_5`: Documented security group attachment via EC2 `vpc_security_group_ids`.
+
+### 4. Verification
+Checkov runs cleanly with all actionable security issues remediated and Free-Tier cost guardrails documented.
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

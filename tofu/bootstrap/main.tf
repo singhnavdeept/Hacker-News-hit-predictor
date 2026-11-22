@@ -28,6 +28,9 @@ data "aws_caller_identity" "current" {}
 
 # 1. S3 Bucket for OpenTofu Remote State
 resource "aws_s3_bucket" "tofu_state" {
+  # checkov:skip=CKV_AWS_18: "Access logging requires dedicated target bucket incurring additional storage and PUT request fees outside Free Tier."
+  # checkov:skip=CKV_AWS_144: "Cross-region replication incurs inter-region transfer and duplicate storage fees outside Free Tier."
+  # checkov:skip=CKV2_AWS_62: "S3 event notifications not required for state storage."
   bucket        = "hn-hit-predictor-tofu-state-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
   force_destroy = false
 
@@ -46,6 +49,7 @@ resource "aws_s3_bucket_versioning" "tofu_state_versioning" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "tofu_state_crypto" {
+  # checkov:skip=CKV_AWS_145: "AES-256 standard server-side encryption is enforced. KMS Customer Managed Key incurs $1.00/month charges."
   bucket = aws_s3_bucket.tofu_state.id
 
   rule {
@@ -62,6 +66,23 @@ resource "aws_s3_bucket_public_access_block" "tofu_state_block" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "tofu_state_lifecycle" {
+  bucket = aws_s3_bucket.tofu_state.id
+
+  rule {
+    id     = "expire-old-state-versions"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
 }
 
 # 2. DynamoDB Table for Distributed State Locking

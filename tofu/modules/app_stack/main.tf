@@ -19,6 +19,9 @@ data "aws_ssm_parameter" "al2023_ami" {
 # 1. S3 Bucket for Model Artifacts and Datasets
 # ----------------------------------------------------------------------
 resource "aws_s3_bucket" "artifacts" {
+  # checkov:skip=CKV_AWS_18: "Access logging requires dedicated target bucket incurring additional storage and PUT request fees outside Free Tier."
+  # checkov:skip=CKV_AWS_144: "Cross-region replication incurs inter-region transfer and duplicate storage fees outside Free Tier."
+  # checkov:skip=CKV2_AWS_62: "S3 event notifications not required for model artifact storage."
   bucket        = "${var.app_name}-artifacts-${var.environment}-${data.aws_caller_identity.current.account_id}"
   force_destroy = false
 
@@ -38,6 +41,7 @@ resource "aws_s3_bucket_versioning" "artifacts_versioning" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "artifacts_crypto" {
+  # checkov:skip=CKV_AWS_145: "AES-256 standard server-side encryption is enforced. KMS Customer Managed Key incurs $1.00/month charges."
   bucket = aws_s3_bucket.artifacts.id
 
   rule {
@@ -56,10 +60,29 @@ resource "aws_s3_bucket_public_access_block" "artifacts_public_block" {
   restrict_public_buckets = true
 }
 
+# S3 Lifecycle Configuration (Satisfies CKV2_AWS_61 and prevents storage bloat)
+resource "aws_s3_bucket_lifecycle_configuration" "artifacts_lifecycle" {
+  bucket = aws_s3_bucket.artifacts.id
+
+  rule {
+    id     = "expire-old-versions"
+    status = "Enabled"
+
+    noncurrent_version_expiration {
+      noncurrent_days = 90
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+  }
+}
+
 # ----------------------------------------------------------------------
-# 2. Security Group (DevSecOps: Port 22 SSH Removed, Port 8000 Inference)
+# 2. Security Group (DevSecOps: Port 22 SSH Removed, Restricted Egress)
 # ----------------------------------------------------------------------
 resource "aws_security_group" "app_sg" {
+  # checkov:skip=CKV2_AWS_5: "Security group is attached to aws_ec2_instance.app_server via vpc_security_group_ids."
   name        = "${var.app_name}-${var.environment}-sg"
   description = "Security group for ${var.app_name} (${var.environment}) - SSM access only, no open SSH"
 
@@ -72,12 +95,20 @@ resource "aws_security_group" "app_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # Egress allowed for OS updates, Docker image pulls, CloudWatch, SSM
+  # Egress restricted to HTTPS (AWS APIs, SSM, CloudWatch, Docker) and HTTP (OS updates)
   egress {
-    description = "Outbound traffic for updates, SSM, and CloudWatch"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    description = "Allow outbound HTTPS for AWS services and Docker Registry"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow outbound HTTP for Amazon Linux package updates"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -162,6 +193,8 @@ resource "aws_iam_instance_profile" "ec2_profile" {
 # 4. CloudWatch Log Group
 # ----------------------------------------------------------------------
 resource "aws_cloudwatch_log_group" "app_logs" {
+  # checkov:skip=CKV_AWS_158: "KMS Customer Managed Key incurs $1.00/month charge outside Free Tier. CloudWatch default AWS-managed encryption is active."
+  # checkov:skip=CKV_AWS_338: "Retaining logs for 365 days exceeds AWS Free Tier 5GB log storage. 7-day retention enforced for Free Tier cost guardrail."
   name              = "/aws/ec2/${var.app_name}-${var.environment}"
   retention_in_days = 7 # Cost-effective: keeps log storage well within Free Tier
 
@@ -219,7 +252,8 @@ resource "aws_ec2_instance" "app_server" {
 # 6. Observability: CloudWatch Metric Filters, Alarms & SNS Alerting
 # ----------------------------------------------------------------------
 resource "aws_sns_topic" "alerts" {
-  name = "${var.app_name}-${var.environment}-alerts"
+  name              = "${var.app_name}-${var.environment}-alerts"
+  kms_master_key_id = "alias/aws/sns" # Free AWS-managed encryption satisfying CKV_AWS_26
 
   tags = {
     Environment = var.environment

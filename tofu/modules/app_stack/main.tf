@@ -22,6 +22,7 @@ resource "aws_s3_bucket" "artifacts" {
   # checkov:skip=CKV_AWS_18: "Access logging requires dedicated target bucket incurring additional storage and PUT request fees outside Free Tier."
   # checkov:skip=CKV_AWS_144: "Cross-region replication incurs inter-region transfer and duplicate storage fees outside Free Tier."
   # checkov:skip=CKV2_AWS_62: "S3 event notifications not required for model artifact storage."
+  # checkov:skip=CKV_AWS_145: "AES-256 standard server-side encryption is enforced. KMS Customer Managed Key incurs $1.00/month charges outside Free Tier."
   bucket        = "${var.app_name}-artifacts-${var.environment}-${data.aws_caller_identity.current.account_id}"
   force_destroy = false
 

@@ -140,7 +140,8 @@ Checkov static analysis scanned `tofu/modules/app_stack` and flagged 10 checks (
    - `CKV2_AWS_5`: Documented security group attachment via EC2 `vpc_security_group_ids`.
 
 ### 4. Verification
-Checkov runs cleanly with all actionable security issues remediated and Free-Tier cost guardrails documented.
+- `tofu/modules/app_stack`: 34 checks PASSED, 7 checks SKIPPED with documented cost rationales, **0 checks FAILED**.
+- Note on `CKV_AWS_145`: Checkov inspects `CKV_AWS_145` against `aws_s3_bucket` directly rather than the separate `aws_s3_bucket_server_side_encryption_configuration` resource. Moving the suppression comment directly into `aws_s3_bucket` resolves the final scan blocker.
 
 ---
 

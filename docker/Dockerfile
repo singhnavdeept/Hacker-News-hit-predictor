@@ -16,9 +16,6 @@ RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-reco
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade core packaging tools (patches CVE-2026-23949 in jaraco.context and CVE-2026-24049 in wheel)
-RUN pip install --no-cache-dir --upgrade pip "setuptools>=84.0.0" "wheel>=0.46.3"
-
 # Install Python requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -31,6 +28,13 @@ COPY tests/ ./tests/
 # Ensure data and models directories exist and train base model artifact
 RUN mkdir -p data models
 RUN python -m src.train
+
+# Security hardening: remove build-time packaging tools (setuptools, wheel)
+# Eliminates CVE-2025-47273 and reduces runtime attack surface
+RUN pip uninstall -y setuptools wheel || true \
+    && rm -rf /usr/lib/python3/dist-packages/setuptools* \
+              /usr/local/lib/python3.11/site-packages/setuptools* \
+              /usr/local/lib/python3.11/site-packages/wheel*
 
 # Expose FastAPI port
 EXPOSE 8000

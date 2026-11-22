@@ -309,6 +309,51 @@ Rebuilding the image and scanning with Aqua Trivy reports **0 High/Critical vuln
 
 ---
 
+## 📌 Incident 008: Aqua Trivy Container Scan Failure (Exit Code 1) — `CVE-2025-47273` in Lingering `setuptools 70.3.0` Metadata
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-23 |
+| **Component** | Container Image Build (`docker/Dockerfile`) |
+| **Severity** | **HIGH** |
+| **Detected By** | CI/CD Gate 4 (`aquasecurity/trivy-action`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+Aqua Trivy caught a single remaining HIGH vulnerability:
+```text
+Python (python-pkg)
+Library: setuptools
+Vulnerability: CVE-2025-47273
+Severity: HIGH
+Status: fixed
+Installed Version: 70.3.0
+Fixed Version: 78.1.1
+Title: setuptools: Path Traversal Vulnerability in setuptools PackageIndex
+```
+
+### 2. Root Cause Analysis (RCA)
+- In Debian 13 (`trixie`), the system package repository installs `python3-setuptools 70.3.0` into `/usr/lib/python3/dist-packages/`.
+- Even though `zlib1g` was patched by `apt-get upgrade -y` and application dependencies were clean, Trivy's filesystem crawler scanned system python directories and detected the unpatched `setuptools 70.3.0` `.dist-info` package metadata.
+- **Runtime Requirement Analysis:** Neither FastAPI, Uvicorn, Scikit-learn, Pandas, nor Joblib require `setuptools` at runtime. `setuptools` is purely a build-time toolchain component. Keeping build tools in a production container violates container minimization principles and leaves unnecessary attack surface.
+
+### 3. How Was It Fixed?
+Applied **production container hardening** in `docker/Dockerfile`:
+After dependencies are installed and `python -m src.train` finishes building the model artifact, purged `setuptools` and `wheel` completely from the final runtime image:
+```dockerfile
+# Security hardening: remove build-time packaging tools (setuptools, wheel)
+# Eliminates CVE-2025-47273 and reduces runtime attack surface
+RUN pip uninstall -y setuptools wheel || true \
+    && rm -rf /usr/lib/python3/dist-packages/setuptools* \
+              /usr/local/lib/python3.11/site-packages/setuptools* \
+              /usr/local/lib/python3.11/site-packages/wheel*
+```
+
+### 4. Verification
+Trivy scans the hardened image with **0 vulnerabilities detected** across both OS and Python packages. All 4 CI/CD gates pass cleanly.
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

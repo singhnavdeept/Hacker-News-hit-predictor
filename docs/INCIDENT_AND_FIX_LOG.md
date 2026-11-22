@@ -239,6 +239,43 @@ All 8 test cases pass cleanly (`8 passed in 1.8s`):
 
 ---
 
+## 📌 Incident 006: GitHub Actions Workflow Action Resolution Failure: `aquasec/trivy-action` Repository Not Found
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-23 |
+| **Component** | CI/CD Pipeline (`.github/workflows/ci-cd.yml`) |
+| **Severity** | **LOW (Action Reference Typo)** |
+| **Detected By** | GitHub Actions Runner (`Prepare all required actions`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+The GitHub Actions runner failed during the workflow preparation step:
+```text
+Getting action download info
+Error: Unable to resolve action aquasec/trivy-action, repository not found
+```
+
+### 2. Root Cause Analysis (RCA)
+- In the Docker Hub registry, Aqua Security's official container image is located under `aquasec/trivy`.
+- However, in GitHub Actions, the official GitHub Action repository is registered under **`aquasecurity/trivy-action`** (organization name is `aquasecurity`, not `aquasec`).
+- Because `.github/workflows/ci-cd.yml` referenced `aquasec/trivy-action@master`, GitHub could not locate the repository.
+
+### 3. How Was It Fixed?
+Updated line 87 in `.github/workflows/ci-cd.yml`:
+```yaml
+# Before:
+uses: aquasec/trivy-action@master
+
+# After:
+uses: aquasecurity/trivy-action@master
+```
+
+### 4. Verification
+GitHub Actions runner successfully resolves, downloads, and executes `aquasecurity/trivy-action@master`.
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

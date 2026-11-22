@@ -84,7 +84,7 @@ jobs:
 
       # Gate 4: Container CVE Scanning with Aqua Trivy
       - name: DevSecOps Gate 4 - Aqua Trivy Container Vulnerability Scan
-        uses: aquasec/trivy-action@master
+        uses: aquasecurity/trivy-action@master
         with:
           image-ref: hn-hit-predictor:${{ github.sha }}
           format: "table"

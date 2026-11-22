@@ -87,9 +87,13 @@ resource "aws_security_group" "app_sg" {
   name        = "${var.app_name}-${var.environment}-sg"
   description = "Security group for ${var.app_name} (${var.environment}) - SSM access only, no open SSH"
 
-  # Public Inference API Endpoint
+  # Public Inference API Endpoint (Demo/Free Tier Architecture)
+  # Architectural Note: Under strict $0.00 AWS Free Tier constraints, an Application Load Balancer
+  # ($16+/mo) and Route 53 domain are omitted. In a funded production environment, this EC2 instance
+  # resides in a private subnet behind an ALB with ACM TLS termination (port 443) and AWS WAF, with
+  # ingress restricted solely to the ALB's security group.
   ingress {
-    description = "FastAPI Inference Port"
+    description = "FastAPI Inference Port (Demo HTTP - Production uses ALB with TLS)"
     from_port   = 8000
     to_port     = 8000
     protocol    = "tcp"

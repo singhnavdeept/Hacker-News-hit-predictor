@@ -60,6 +60,46 @@ Because of this hard ceiling (`<0.42.0`), `pip` was prevented from pulling any p
 
 ---
 
+## 📌 Incident 002: CI/CD Gate 2 Failure — CVEs in `pytest 8.3.4` and `requests 2.32.3`
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-22 |
+| **Component** | `requirements.txt` (`pytest`, `requests`) |
+| **Severity** | **HIGH** |
+| **Detected By** | CI/CD Gate 2 (`pip-audit -r requirements.txt`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+`pip-audit` found 6 known vulnerability instances across 2 pinned packages:
+1. **`pytest 8.3.4` (`PYSEC-2026-1845`):**
+   - **Vulnerability:** On UNIX systems, `pytest` relied on directories with predictable `/tmp/pytest-of-{user}` naming patterns, allowing local unprivileged users to cause Denial of Service or escalate privileges.
+   - **Fixed in:** `pytest >= 9.0.3` (Latest stable: `9.2.0`).
+2. **`requests 2.32.3` (`PYSEC-2026-1872` & `PYSEC-2026-2275`):**
+   - **`PYSEC-2026-1872`:** Maliciously-crafted URLs triggered a URL parsing defect that leaked `.netrc` authentication credentials to untrusted third parties (Fixed in `2.32.4`).
+   - **`PYSEC-2026-2275`:** `requests.utils.extract_zipped_paths()` extracted files to predictable filenames in `/tmp` without validation, allowing local attackers to overwrite and inject malicious payloads (Fixed in `2.33.0`).
+
+### 2. Root Cause Analysis (RCA)
+`requirements.txt` pinned exact legacy releases:
+```text
+pytest==8.3.4     # Vulnerable to PYSEC-2026-1845
+requests==2.32.3  # Vulnerable to PYSEC-2026-1872 and PYSEC-2026-2275
+```
+Because of rigid `==` pinning, `pip` was prevented from pulling patched versions released upstream.
+
+### 3. How Was It Fixed?
+Updated `requirements.txt` to lift the version constraints to patched releases:
+```text
+pytest>=9.0.3
+requests>=2.33.0
+httpx>=0.28.1
+```
+
+### 4. Verification
+Both `pytest` and `requests` are upgraded beyond their vulnerability thresholds (`pytest 9.2.0` and `requests 2.34.2`). `pip-audit -r requirements.txt` passes cleanly.
+
+---
+
 ## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
 
 | Metadata | Details |

@@ -23,3 +23,11 @@ class HealthResponse(BaseModel):
 class MetricsResponse(BaseModel):
     status: str
     metrics: Dict[str, Any]
+
+class VersionResponse(BaseModel):
+    service: str
+    version: str
+    git_sha: str
+    environment: str
+    model_loaded: bool
+    timestamp: str

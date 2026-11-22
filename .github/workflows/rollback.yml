@@ -1,0 +1,78 @@
+name: Fast Production Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_git_sha:
+        description: "Target Git SHA or image tag to roll back to (e.g. 3d1c76f... or v6)"
+        required: true
+        type: string
+      reason:
+        description: "Reason for rollback (e.g. Model drift, 5xx spike, regression)"
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  execute-rollback:
+    name: Execute Fast Rollback
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.8.0"
+
+      - name: Fetch Target Instance & Public IP
+        id: tofu_info
+        working-directory: tofu/environments/prod
+        run: |
+          tofu init
+          INSTANCE_ID=$(tofu output -raw instance_id)
+          PUBLIC_IP=$(tofu output -raw public_ip)
+          echo "instance_id=${INSTANCE_ID}" >> $GITHUB_OUTPUT
+          echo "public_ip=${PUBLIC_IP}" >> $GITHUB_OUTPUT
+
+      - name: Rollback Container via AWS SSM
+        run: |
+          echo "Executing rollback to tag: ${{ inputs.target_git_sha }}"
+          echo "Rollback reason: ${{ inputs.reason }}"
+          
+          aws ssm send-command \
+            --instance-ids "${{ steps.tofu_info.outputs.instance_id }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=[
+              "docker rm -f hn-hit-predictor-api || true",
+              "docker run -d --name hn-hit-predictor-api --restart unless-stopped -p 8000:8000 -e ENV=prod -e GIT_COMMIT=${{ inputs.target_git_sha }} hn-hit-predictor:${{ inputs.target_git_sha }}"
+            ]' \
+            --comment "Emergency rollback: ${{ inputs.reason }}"
+
+      - name: Wait for Rollback Startup
+        run: sleep 12
+
+      - name: Verify Rollback at /version
+        run: |
+          TARGET_URL="http://${{ steps.tofu_info.outputs.public_ip }}:8000/version"
+          echo "Verifying rolled back version at ${TARGET_URL}..."
+          
+          RESPONSE=$(curl -s -f ${TARGET_URL} || echo "{}")
+          LIVE_SHA=$(echo $RESPONSE | jq -r '.git_sha // empty')
+          
+          echo "Live SHA after rollback is: '${LIVE_SHA}'"
+          if [[ "${LIVE_SHA}" == *"${{ inputs.target_git_sha }}"* ]]; then
+            echo "✅ Rollback verified successfully! Active version matches ${{ inputs.target_git_sha }}."
+          else
+            echo "⚠️ Warning: Verified endpoint returned ${LIVE_SHA}, inspect container logs."
+          fi

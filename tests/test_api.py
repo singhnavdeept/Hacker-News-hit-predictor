@@ -22,6 +22,16 @@ def test_health_endpoint():
     assert data["status"] == "healthy"
     assert "model_loaded" in data
 
+def test_version_endpoint():
+    response = client.get("/version")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["service"] == "hn-hit-predictor-api"
+    assert "version" in data
+    assert "git_sha" in data
+    assert "environment" in data
+    assert "timestamp" in data
+
 def test_predict_endpoint_success():
     payload = {
         "title": "Show HN: FastML – Lightweight MLOps Pipeline in Python",

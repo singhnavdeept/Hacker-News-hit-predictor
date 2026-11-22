@@ -1,0 +1,200 @@
+name: Production MLOps CI/CD with OIDC & DevSecOps
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write   # Required for requesting AWS STS OIDC token
+  contents: read    # Required for actions/checkout
+
+jobs:
+  # --------------------------------------------------------------------
+  # 1. DevSecOps Scanning (Secrets, Dependencies, IaC) & Unit Testing
+  # --------------------------------------------------------------------
+  security-and-quality-gates:
+    name: Security & Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Gate 1: Secret Scanning with Gitleaks
+      - name: DevSecOps Gate 1 - Gitleaks Secret Detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Setup Python for dependencies and unit tests
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pip-audit checkov pytest httpx
+
+      # Gate 2: Python Dependency Vulnerability Scan with pip-audit
+      - name: DevSecOps Gate 2 - pip-audit Dependency Vulnerabilities
+        run: |
+          echo "Scanning dependencies for known CVEs..."
+          pip-audit -r requirements.txt --desc on
+
+      # Gate 3: IaC Static Security Analysis with Checkov
+      - name: DevSecOps Gate 3 - Checkov IaC Security Scan
+        run: |
+          echo "Scanning OpenTofu infrastructure templates..."
+          checkov -d tofu/modules/app_stack --framework terraform --compact
+
+      # Functional Unit Tests & Sanity Checks
+      - name: Run Pytest Suite & Model Validation
+        run: |
+          pytest -v tests/
+
+  # --------------------------------------------------------------------
+  # 2. Package Container & Container Security Scan (Aqua Trivy)
+  # --------------------------------------------------------------------
+  build-and-container-scan:
+    name: Package & Container Scan
+    needs: security-and-quality-gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Production Image
+        run: |
+          docker build \
+            --build-arg GIT_COMMIT=${{ github.sha }} \
+            -t hn-hit-predictor:${{ github.sha }} \
+            -t hn-hit-predictor:latest \
+            -f docker/Dockerfile .
+
+      # Gate 4: Container CVE Scanning with Aqua Trivy
+      - name: DevSecOps Gate 4 - Aqua Trivy Container Vulnerability Scan
+        uses: aquasec/trivy-action@master
+        with:
+          image-ref: hn-hit-predictor:${{ github.sha }}
+          format: "table"
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "HIGH,CRITICAL"
+
+  # --------------------------------------------------------------------
+  # 3. Infrastructure Plan & Apply (OpenTofu via AWS OIDC)
+  # --------------------------------------------------------------------
+  infrastructure-tofu:
+    name: OpenTofu Plan & Apply
+    needs: build-and-container-scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      ec2_public_ip: ${{ steps.tofu_outputs.outputs.public_ip }}
+      instance_id: ${{ steps.tofu_outputs.outputs.instance_id }}
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      # Configure AWS credentials through OIDC without stored access keys
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v1
+        with:
+          tofu_version: "1.8.0"
+
+      - name: OpenTofu Init & Plan
+        working-directory: tofu/environments/prod
+        run: |
+          tofu init
+          tofu plan -no-color -out=tfplan
+
+      - name: OpenTofu Apply
+        working-directory: tofu/environments/prod
+        run: |
+          tofu apply -auto-approve tfplan
+
+      - name: Capture OpenTofu Outputs
+        id: tofu_outputs
+        working-directory: tofu/environments/prod
+        run: |
+          PUBLIC_IP=$(tofu output -raw public_ip || echo "127.0.0.1")
+          INSTANCE_ID=$(tofu output -raw instance_id || echo "unknown")
+          echo "public_ip=${PUBLIC_IP}" >> $GITHUB_OUTPUT
+          echo "instance_id=${INSTANCE_ID}" >> $GITHUB_OUTPUT
+
+  # --------------------------------------------------------------------
+  # 4. Deployment Verification & Version Assurance
+  # --------------------------------------------------------------------
+  deploy-and-verify:
+    name: Deploy & Verify Rollout
+    needs: infrastructure-tofu
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-south-1
+
+      - name: Execute Deployment via AWS SSM Run Command
+        run: |
+          echo "Deploying release ${{ github.sha }} to instance ${{ needs.infrastructure-tofu.outputs.instance_id }}..."
+          aws ssm send-command \
+            --instance-ids "${{ needs.infrastructure-tofu.outputs.instance_id }}" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=[
+              "docker rm -f hn-hit-predictor-api || true",
+              "docker run -d --name hn-hit-predictor-api --restart unless-stopped -p 8000:8000 -e ENV=prod -e GIT_COMMIT=${{ github.sha }} hn-hit-predictor:latest"
+            ]' \
+            --comment "Automated CI/CD deployment for ${{ github.sha }}"
+
+      - name: Wait for Service Warmup
+        run: sleep 15
+
+      # Verification: Confirm every deploy actually rolls out by querying /version
+      - name: Verify Live /version Endpoint
+        run: |
+          TARGET_URL="http://${{ needs.infrastructure-tofu.outputs.ec2_public_ip }}:8000/version"
+          echo "Probing version endpoint at ${TARGET_URL}..."
+          
+          MAX_RETRIES=6
+          COUNT=0
+          SUCCESS=0
+          
+          while [ $COUNT -lt $MAX_RETRIES ]; do
+            RESPONSE=$(curl -s -f ${TARGET_URL} || echo "{}")
+            LIVE_SHA=$(echo $RESPONSE | jq -r '.git_sha // empty')
+            echo "Attempt $((COUNT+1)): Live SHA is '${LIVE_SHA}', Expected '${{ github.sha }}'"
+            
+            if [ "$LIVE_SHA" = "${{ github.sha }}" ]; then
+              echo "✅ Verification successful! Release ${{ github.sha }} is active and live."
+              SUCCESS=1
+              break
+            fi
+            
+            COUNT=$((COUNT+1))
+            sleep 10
+          done
+          
+          if [ $SUCCESS -ne 1 ]; then
+            echo "❌ Deployment verification timed out or SHA mismatch!"
+            exit 1
+          fi

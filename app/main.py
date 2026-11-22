@@ -1,23 +1,56 @@
 import os
+import sys
 import json
+import time
 import logging
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.schemas import PredictionRequest, PredictionResponse, HealthResponse, MetricsResponse
+from app.schemas import (
+    PredictionRequest,
+    PredictionResponse,
+    HealthResponse,
+    MetricsResponse,
+    VersionResponse
+)
 from src.data_loader import extract_domain_type
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("hn-hit-predictor")
+# ----------------------------------------------------------------------
+# Structured JSON Logging for CloudWatch Metric Filters & Ingestion
+# ----------------------------------------------------------------------
+class JSONFormatter(logging.Formatter):
+    def format(self, record):
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage()
+        }
+        if hasattr(record, "props"):
+            log_entry.update(record.props)
+        return json.dumps(log_entry)
 
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(JSONFormatter())
+logger = logging.getLogger("hn-hit-predictor")
+logger.setLevel(logging.INFO)
+logger.handlers = [handler]
+logger.propagate = False
+
+# Model and artifact paths
 MODEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models", "model.joblib")
 METRICS_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "models", "metrics.json")
+
+# Metadata injected by Docker build & environment
+GIT_COMMIT = os.getenv("GIT_COMMIT", "dev-local")
+APP_ENV = os.getenv("ENV", "development")
+APP_VERSION = "1.0.0"
 
 model_pipeline = None
 model_metrics = {}
@@ -42,7 +75,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="HN HIT Predictor API",
     description="MLOps Inference Service for predicting whether a Hacker News post will reach the front page.",
-    version="1.0.0",
+    version=APP_VERSION,
     lifespan=lifespan
 )
 
@@ -53,6 +86,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Request logging middleware for CloudWatch JSON ingestion
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    duration_ms = round((time.time() - start_time) * 1000, 2)
+    
+    client_host = request.client.host if request.client else "unknown"
+    
+    # Structured JSON log entry
+    log_record = logging.LogRecord(
+        name="hn-hit-predictor",
+        level=logging.INFO,
+        pathname="",
+        lineno=0,
+        msg=f"{request.method} {request.url.path} returned {response.status_code} in {duration_ms}ms",
+        args=(),
+        exc_info=None
+    )
+    log_record.props = {
+        "service": "hn-hit-predictor",
+        "environment": APP_ENV,
+        "method": request.method,
+        "path": request.url.path,
+        "status": response.status_code,
+        "latency_ms": duration_ms,
+        "client_ip": client_host
+    }
+    logger.handle(log_record)
+    
+    return response
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 if os.path.exists(STATIC_DIR):
@@ -68,6 +133,7 @@ def root():
         "description": "MLOps Pipeline on AWS / Docker",
         "endpoints": {
             "health": "/health",
+            "version": "/version",
             "predict": "/predict",
             "metrics": "/metrics",
             "docs": "/docs"
@@ -80,7 +146,19 @@ def health_check():
         status="healthy",
         service="hn-hit-predictor-api",
         model_loaded=(model_pipeline is not None),
-        version="1.0.0"
+        version=APP_VERSION
+    )
+
+@app.get("/version", response_model=VersionResponse, tags=["Deploy Verification"])
+def get_version():
+    """Returns deployment version, Git SHA, and environment for CI/CD deploy verification."""
+    return VersionResponse(
+        service="hn-hit-predictor-api",
+        version=APP_VERSION,
+        git_sha=GIT_COMMIT,
+        environment=APP_ENV,
+        model_loaded=(model_pipeline is not None),
+        timestamp=datetime.now(timezone.utc).isoformat()
     )
 
 @app.get("/metrics", response_model=MetricsResponse, tags=["Monitoring"])
@@ -103,9 +181,9 @@ def predict_hit(payload: PredictionRequest):
         try:
             dt = datetime.fromisoformat(payload.submission_time.replace("Z", "+00:00"))
         except Exception:
-            dt = datetime.utcnow()
+            dt = datetime.now(timezone.utc)
     else:
-        dt = datetime.utcnow()
+        dt = datetime.now(timezone.utc)
 
     submission_hour = dt.hour
     submission_day = dt.weekday()
@@ -138,8 +216,6 @@ def predict_hit(payload: PredictionRequest):
             confidence = "Low"
 
         label = "Likely Hit (Frontpage Material)" if is_hit else "Unlikely Hit"
-
-        logger.info(f"Prediction made for '{title_clean}' -> Hit: {is_hit} (prob={prob:.3f})")
 
         return PredictionResponse(
             title=title_clean,

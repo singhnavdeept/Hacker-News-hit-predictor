@@ -1,165 +1,175 @@
-# HN HIT Predictor: An MLOps Pipeline on AWS
+# HN HIT Predictor: Production MLOps & DevSecOps Platform on AWS
 
-**HN HIT Predictor** is an end-to-end Machine Learning Operations (MLOps) pipeline that predicts whether a Hacker News submission will become a "Hit" (gain significant traction, reach the front page, or score 50+ upvotes).
+[![CI/CD Pipeline](https://github.com/singhnavdeept/Hacker-News-hit-predictor/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/singhnavdeept/Hacker-News-hit-predictor/actions/workflows/ci-cd.yml)
+[![OpenTofu](https://img.shields.io/badge/IaC-OpenTofu-blue.svg)](https://opentofu.org)
+[![AWS OIDC](https://img.shields.io/badge/Security-AWS%20OIDC-green.svg)](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+[![DevSecOps](https://img.shields.io/badge/Scanners-Gitleaks%20|%20pip--audit%20|%20Checkov%20|%20Trivy-orange.svg)]()
+[![Free Tier](https://img.shields.io/badge/Cost-%240.00%20(AWS%20Free%20Tier)-brightgreen.svg)]()
 
-The project is designed to run seamlessly in **local Docker containers** for zero-cost development and testing, before deploying to **AWS Free Tier** using **CloudFormation**, **Jenkins**, and **CloudWatch**.
+**HN HIT Predictor** is an enterprise-grade Machine Learning Operations (MLOps) and DevSecOps platform that predicts whether a Hacker News submission will reach the front page (50+ points).
 
----
-
-## 🏗️ Architecture Overview
-
-```text
- ┌────────────────────────────────────────────────────────┐
- │                      Local / AWS                       │
- │                                                        │
- │   Hacker News Data ──► Data Loader & Feature Extractor │
- │                                   │                    │
- │                                   ▼                    │
- │                       Model Training Pipeline          │
- │                      (TF-IDF + ColumnTransformer       │
- │                        + Logistic Classifier)          │
- │                                   │                    │
- │                                   ▼                    │
- │                          Trained Artifacts             │
- │                      (model.joblib & metrics.json)     │
- │                                   │                    │
- │                                   ▼                    │
- │                          FastAPI Service               │
- │                   (GET /health, POST /predict)         │
- └───────────────────────────────────┬────────────────────┘
-                                     │
-           ┌─────────────────────────┴────────────────────────┐
-           ▼                                                  ▼
-┌───────────────────────┐                         ┌───────────────────────┐
-│     CI/CD Pipeline    │                         │  AWS CloudFormation   │
-│   (Jenkins in Docker) │                         │   & CloudWatch Logs   │
-│ • Unit testing        │                         │ • EC2 t2.micro        │
-│ • Container smoke test│                         │ • S3 Model Artifacts  │
-│ • Auto-deployment     │                         │ • Latency/Error Alarms│
-└───────────────────────┘                         └───────────────────────┘
-```
+Built to industry standards matching production engineering requirements:
+* **Infrastructure as Code (IaC):** Modular **OpenTofu** with remote S3 backend, DynamoDB state locking, and separate `staging` / `prod` environments.
+* **CI/CD with Zero Stored AWS Keys:** **GitHub Actions** authenticates to AWS via **OIDC (OpenID Connect)** federation.
+* **4-Tier Shift-Left DevSecOps:** Automated scans for secrets (**Gitleaks**), Python dependencies (**pip-audit**), IaC misconfigurations (**Checkov**), and container vulnerabilities (**Aqua Trivy**) that fail on high-severity findings.
+* **Deploy Verification & Fast Rollback:** Automated verification asserting the live `/version` Git SHA matches release, paired with a 1-click rollback workflow.
+* **SRE Observability:** Structured JSON logs to CloudWatch, custom metric filters, high CPU / 5xx error alarms, AWS billing alarms, and SNS email notifications.
+* **Zero-SSH Attack Surface:** Port 22 closed; host access strictly via **AWS Systems Manager (SSM) Session Manager** with **IMDSv2 enforced** and **encrypted gp3 EBS volumes**.
 
 ---
 
-## 🚀 Quickstart: Running Locally with Docker
+## 🏗️ End-to-End System Architecture
 
-### 1. Build and Run the Prediction API
-```bash
-# Build the Docker image
-docker build -t hn-hit-predictor:latest -f docker/Dockerfile .
+```mermaid
+flowchart TD
+    subgraph DEV["1. Developer & Git Workflow"]
+        GIT["Developer commit & push"] --> GH["GitHub Repository\nsinghnavdeept/Hacker-News-hit-predictor"]
+    end
 
-# Run the container
-docker run -d --name hn-api -p 8000:8000 hn-hit-predictor:latest
+    subgraph GHA["2. GitHub Actions CI/CD Pipeline"]
+        OIDC["AWS OIDC Federation\n(Zero Stored AWS Keys)"]
+        
+        subgraph SCAN["4-Tier Security Scanning Gates (Fails on High/Crit)"]
+            S1["1. Gitleaks\nSecrets Detection"]
+            S2["2. pip-audit\nPyPI CVE Scan"]
+            S3["3. Checkov\nOpenTofu IaC Scan"]
+            S4["4. Aqua Trivy\nContainer CVE Scan"]
+            S1 --> S2 --> S3 --> S4
+        end
+
+        TEST["5. Unit & ML Sanity Tests (pytest)"]
+        BUILD["6. Docker Build (Bakes model & Git SHA)"]
+        PLAN["7. OpenTofu Plan & Apply (Reviewed Plan)"]
+        DEPLOY["8. Remote Deploy via AWS SSM Run Command"]
+        VERIFY["9. Verify /version Endpoint == Git SHA"]
+        
+        OIDC --> SCAN --> TEST --> BUILD --> PLAN --> DEPLOY --> VERIFY
+    end
+
+    subgraph AWS["3. AWS Cloud (Free Tier - 0 USD)"]
+        subgraph IAM_S["Identity & State"]
+            ROLE["GitHubActionsWorkflowRole\n(OIDC scoped to repo)"]
+            S3_STATE["S3 Bucket: tofu-state\n+ DynamoDB State Lock"]
+        end
+
+        subgraph VPC["VPC / Compute"]
+            EC2["EC2 t3.micro (Amazon Linux 2023)\n- IMDSv2 Enforced\n- EBS gp3 Encrypted (20GB)\n- Port 22 CLOSED (SSM Session Manager only)\n- Port 8000 OPEN (FastAPI Inference)"]
+            API_CONT["Docker Container: hn-hit-predictor\n- Structured JSON Logging\n- /health, /version, /predict, /metrics"]
+        end
+
+        subgraph OBS["CloudWatch Observability & Alerting"]
+            CWL["CloudWatch Logs Group\n(/aws/ec2/hn-hit-predictor-prod)"]
+            METRIC_FILTER["Metric Filter: 5xx Errors & Health Failures"]
+            DASH["CloudWatch Metric Dashboard"]
+            ALARM1["High CPU Alarm (>80%)"]
+            ALARM2["5xx Error Rate Alarm"]
+            ALARM3["AWS Billing Alarm (>1.00 USD)"]
+            SNS["Amazon SNS Topic\nEmail Alerts to Developer"]
+        end
+    end
+
+    GH --> GHA
+    GHA -->|"Assumes Role via OIDC"| ROLE
+    GHA -->|"Locks & Reads State"| S3_STATE
+    VERIFY -->|"Queries http://EC2:8000/version"| API_CONT
+    API_CONT -->|"Streams JSON Logs"| CWL
+    CWL --> METRIC_FILTER --> ALARM2
+    EC2 --> ALARM1
+    ALARM1 & ALARM2 & ALARM3 --> SNS
 ```
 
-### 2. Test the API Endpoints
-Open your browser or run curl:
-* **Interactive Swagger UI:** [http://localhost:8000/docs](http://localhost:8000/docs)
-* **Health Check:**
-```bash
-curl http://localhost:8000/health
-```
+---
 
-* **Make a Prediction:**
+## 🔒 Security Posture & DevSecOps Compliance
+
+| Security Dimension | Implementation | Standard / Benefit |
+|---|---|---|
+| **Cloud Authentication** | AWS IAM OIDC Provider | Zero static access keys; short-lived STS tokens |
+| **Host Access** | AWS Systems Manager (SSM) | Port 22 (SSH) is completely closed to the internet |
+| **Metadata Protection** | IMDSv2 Strictly Enforced | Mitigates Server-Side Request Forgery (SSRF) credential theft |
+| **Data at Rest** | AES-256 (S3) & KMS/AES (EBS gp3) | Full disk and object storage encryption |
+| **Secrets in Code** | Gitleaks in CI | Blocks commits containing API keys, AWS tokens, or passwords |
+| **Dependency Security** | `pip-audit` in CI | Halts builds if Python dependencies have published CVEs |
+| **IaC Compliance** | Checkov in CI | Validates OpenTofu against CIS AWS Foundations Benchmark |
+| **Image Hardening** | Aqua Trivy in CI | Scans container layers and fails on unfixed High/Critical CVEs |
+
+---
+
+## 🚀 API Endpoints
+
+Once deployed on EC2 (or run locally on port 8000):
+
+* **Web UI Dashboard:** `GET /` — Interactive dark-themed Hacker News UI.
+* **Health Check:** `GET /health` — Liveness & readiness probe.
+* **Deployment Verification:** `GET /version` — Returns active Git commit SHA, environment, and build metadata.
+* **Real-Time Prediction:** `POST /predict` — Analyzes submission title, domain category, and timing.
+* **Operational Metrics:** `GET /metrics` — Precision, recall, F1, and AUC statistics.
+* **Interactive Swagger UI:** `GET /docs` — Live API documentation and testing interface.
+
+### Sample Prediction Request:
 ```bash
-curl -X POST http://localhost:8000/predict \
+curl -X POST http://<EC2_IP>:8000/predict \
   -H "Content-Type: application/json" \
   -d '{
-    "title": "Show HN: RustKV – High performance distributed cache in Rust",
-    "url": "https://github.com/developer/rustkv",
-    "submission_time": "2026-11-08T15:30:00Z"
+    "title": "Show HN: FastKV – High Performance Key-Value Store in Rust",
+    "url": "https://github.com/developer/fastkv",
+    "submission_time": "2026-11-22T15:30:00Z"
   }'
 ```
 
-Sample Response:
+### Sample Prediction Response:
 ```json
 {
-  "title": "Show HN: RustKV – High performance distributed cache in Rust",
+  "title": "Show HN: FastKV – High Performance Key-Value Store in Rust",
   "is_hit": true,
-  "hit_probability": 0.8841,
+  "hit_probability": 0.8421,
   "confidence_level": "High",
   "prediction_label": "Likely Hit (Frontpage Material)",
   "features": {
-    "title": "Show HN: RustKV – High performance distributed cache in Rust",
+    "title": "Show HN: FastKV – High Performance Key-Value Store in Rust",
     "domain_type": "github",
     "submission_hour": 15,
     "submission_day": 6,
     "title_len": 58,
-    "title_word_count": 8
+    "title_word_count": 9
   }
 }
 ```
 
 ---
 
-## 🛡️ DevSecOps Security Scanning
+## 🛠️ Infrastructure Management with OpenTofu
 
-This project integrates automated security testing into both local development and the Jenkins CI/CD pipeline:
-
-### 1. Infrastructure as Code (IaC) Security with Checkov
-Scans `cloudformation/infra.yaml` for AWS security flaws and compliance issues:
+### 1. One-Time Bootstrap (State Bucket & DynamoDB Lock)
 ```bash
-docker run --rm -v "${PWD}:/work" bridgecrew/checkov:latest \
-  -f /work/cloudformation/infra.yaml --framework cloudformation
-```
-* **Security Controls Applied:**
-  * Strict SSH (port 22) and Jenkins (port 8080) CIDR restrictions (`CKV_AWS_24`).
-  * Enforced default S3 AES-256 Server-Side Encryption (`CKV_AWS_19`).
-  * S3 Public Access Block Configuration (`CKV_AWS_53` - `CKV_AWS_56`).
-  * CloudWatch 7-day log retention to prevent unbounded disk growth.
-
-### 2. Container Vulnerability Scanning with Aqua Trivy
-Scans `hn-hit-predictor:latest` for operating system and application CVEs:
-```bash
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy:latest image --severity HIGH,CRITICAL hn-hit-predictor:latest
+cd tofu/bootstrap
+tofu init
+tofu plan -out=tfplan
+tofu apply tfplan
 ```
 
-### 3. One-Click Security Audit Script
-Run both scans simultaneously:
-```powershell
-.\scripts\security_scan.ps1
+### 2. Deploy Staging or Production
+```bash
+cd tofu/environments/prod
+tofu init
+tofu plan -out=tfplan
+tofu apply tfplan
+```
+
+### 3. Clean Teardown (Zero Cost After Testing)
+```bash
+cd tofu/environments/prod
+tofu destroy -auto-approve
+
+cd ../../bootstrap
+tofu destroy -auto-approve
 ```
 
 ---
 
-## 🧪 Running Automated Unit Tests
-To run unit and model tests inside Docker:
-```bash
-docker run --rm hn-hit-predictor:latest pytest -v tests/
-```
+## 📚 Complete Project Documentation
 
----
-
-## 🛠️ Running Local Jenkins CI/CD
-You can run the full environment including Jenkins using Docker Compose:
-```bash
-docker compose up -d
-```
-* **Jenkins UI:** [http://localhost:8080](http://localhost:8080)
-* **FastAPI Service:** [http://localhost:8000](http://localhost:8000)
-
-The declarative pipeline in [`Jenkinsfile`](./Jenkinsfile) automates:
-1. Environment validation
-2. Model testing & Pytest validation
-3. Production Docker image packaging
-4. Smoke testing the running container
-5. Production rollout
-
----
-
-## ☁️ Deploying to AWS (100% Free Tier)
-
-The [`cloudformation/infra.yaml`](./cloudformation/infra.yaml) template sets up:
-1. **EC2 Instance:** `t2.micro` or `t3.micro` (Within 750 free hours/month).
-2. **S3 Bucket:** Private bucket for versioning model artifacts (Within 5 GB free tier).
-3. **IAM Roles:** Grants EC2 permissions to push logs to CloudWatch and download model artifacts from S3.
-4. **CloudWatch Log Group & Alarms:** Monitored CPU utilization and container logs.
-
-To deploy via AWS CLI:
-```bash
-aws cloudformation create-stack \
-  --stack-name hn-hit-predictor-stack \
-  --template-body file://cloudformation/infra.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
-```
+* 📖 **[Operational Runbook](docs/OPERATIONAL_RUNBOOK.md):** Step-by-step incident response, alarm troubleshooting, and 1-click rollback guide.
+* 📋 **[Production Upgrade Plan](docs/PRODUCTION_UPGRADE_PLAN.md):** Full JD alignment, cost analysis, and architectural design specification.
+* 🎓 **[Viva & Technical Question Bank](docs/VIVA_QUESTIONS.md):** 100 comprehensive questions covering MLOps, Docker, AWS, OpenTofu, and DevSecOps.
+* 📘 **[Complete Learning Guide](docs/LEARNING_GUIDE.md):** In-depth technical reference explaining every architectural decision and component.

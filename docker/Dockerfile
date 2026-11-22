@@ -7,6 +7,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/workspace
 
+# Accept Git commit hash at build time for deploy verification (/version endpoint)
+ARG GIT_COMMIT=dev-local
+ENV GIT_COMMIT=${GIT_COMMIT}
+
 # Install curl for container health check
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \

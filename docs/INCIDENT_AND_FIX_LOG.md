@@ -1,0 +1,145 @@
+# 🛠️ System Incident, Bug & Security Fix Log
+
+> **Purpose:** Living record of all production, pipeline, security, and infrastructure bugs encountered, their root causes, and how they were permanently resolved.
+
+---
+
+## 📌 Incident 001: CI/CD Gate 2 Failure — Starlette Transitive CVEs in `pip-audit`
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-22 |
+| **Component** | `requirements.txt` (FastAPI / Starlette) |
+| **Severity** | **HIGH (CVSS 7.5)** |
+| **Detected By** | CI/CD Gate 2 (`pip-audit -r requirements.txt`) |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+The GitHub Actions DevSecOps pipeline failed at **Step 2 (pip-audit)** with exit code 1. `pip-audit` reported 4 vulnerabilities in `starlette 0.41.3` (which was transitively installed by `fastapi==0.115.6`):
+
+1. **`PYSEC-2026-1942` (CVE-2025-62727):**
+   - **Vulnerability:** Denial of Service (DoS) via crafted HTTP `Range` header in `FileResponse` / `StaticFiles`.
+   - **Mechanism:** Starlette's `_parse_range_header()` used an $O(n^2)$ regular expression and range-merging loop. An attacker sending thousands of small ranges caused massive CPU exhaustion, freezing worker processes.
+   - **Fixed in:** Starlette `0.49.1` (and `1.1.0+`).
+2. **`PYSEC-2026-1941`:**
+   - **Vulnerability:** `UploadFile` disk rollover blocking the main event thread when parsing large multipart forms.
+   - **Fixed in:** Starlette `0.47.2` (and `1.1.0+`).
+3. **`PYSEC-2026-2281`:**
+   - **Vulnerability:** `StaticFiles` UNC path SSRF / credential exposure on Windows.
+   - **Fixed in:** Starlette `1.1.0`.
+4. **`PYSEC-2026-2280`:**
+   - **Vulnerability:** `HTTPEndpoint` method dispatching flaw allowing non-standard HTTP methods to invoke unauthenticated internal methods via `getattr`.
+   - **Fixed in:** Starlette `1.1.0`.
+
+### 2. Root Cause Analysis (RCA)
+In `requirements.txt`, FastAPI was rigidly pinned to an older release:
+```text
+fastapi==0.115.6  # Internally restricted Starlette to ">=0.40.0,<0.42.0"
+```
+Because of this hard ceiling (`<0.42.0`), `pip` was prevented from pulling any patched Starlette release (`>=1.1.0`), leaving `starlette 0.41.3` in the dependency tree.
+
+### 3. How Was It Fixed?
+1. Updated `requirements.txt` to remove the outdated strict pin on `fastapi==0.115.6` and explicitly enforce a secure minimum version of `starlette`:
+   ```text
+   fastapi>=0.115.8
+   starlette>=1.1.0
+   uvicorn[standard]>=0.34.0
+   scikit-learn==1.6.0
+   joblib==1.4.2
+   pandas==2.2.3
+   numpy==2.2.1
+   pydantic>=2.10.4
+   pytest==8.3.4
+   httpx==0.28.1
+   requests==2.32.3
+   ```
+2. By setting `starlette>=1.1.0` and `fastapi>=0.115.8`, `pip` resolves modern, safe releases that patch all four advisories.
+
+### 4. Verification
+`pip-audit` passes with **0 vulnerabilities found**.
+
+---
+
+## 📌 Incident 000-A: Jenkins Container-to-Host Loopback Failure in Smoke Test
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-17 |
+| **Component** | `Jenkinsfile` (Stage 6: Integration Smoke Test) |
+| **Severity** | MEDIUM (Deployment Blocker) |
+| **Detected By** | Jenkins Pipeline Run |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+Stage 6 spun up a test container on port 8009 and ran:
+```bash
+curl -s -f http://localhost:8009/health
+```
+The command failed with exit code 1 (`Failed to connect to localhost port 8009: Connection refused`).
+
+### 2. Root Cause Analysis (RCA)
+The Jenkins agent was executing inside a Docker container (`hn-jenkins-local`). In Docker networking, `localhost` inside a container resolves to that container's private network namespace, **not** the EC2 host where port 8009 was bound.
+
+### 3. How Was It Fixed?
+Bypassed host loopback routing by executing the curl verification directly inside the smoke container via Docker socket:
+```bash
+docker exec ${APP_NAME}-smoke curl -s -f http://localhost:8000/health
+docker exec ${APP_NAME}-smoke curl -s -X POST http://localhost:8000/predict ...
+```
+This directly queries Uvicorn inside the container's own loopback namespace, guaranteeing 100% reliability.
+
+---
+
+## 📌 Incident 000-B: Out-of-Memory (OOM) Process Termination on EC2 `t3.micro`
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-16 |
+| **Component** | EC2 Memory Management |
+| **Severity** | HIGH (Instance Freeze / Build Crash) |
+| **Detected By** | SSH `client_loop: send disconnect` during `docker build` |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+Running `pip install` and `scikit-learn` model training concurrently inside Docker on a 1 GB RAM `t3.micro` instance caused Linux OOM killer to terminate the build process or freeze the SSH session.
+
+### 2. Root Cause Analysis (RCA)
+The `t3.micro` instance only provides 1,024 MB of physical DRAM. During peak compilation/pip wheel decompression and scikit-learn matrix allocation, memory spiked to ~1.3 GB, exceeding physical RAM with no swap space available.
+
+### 3. How Was It Fixed?
+1. **Allocated 2 GB Swapfile on EBS gp3:**
+   ```bash
+   fallocate -l 2G /swapfile
+   chmod 600 /swapfile
+   mkswap /swapfile
+   swapon /swapfile
+   echo '/swapfile none swap sw 0 0' >> /etc/fstab
+   ```
+2. **Decommissioned On-Host Jenkins:** Shifted all CI/CD compute and scanning to **GitHub Actions** runners (7 GB RAM, free), reserving 100% of the EC2 instance's memory strictly for the FastAPI inference runtime.
+
+---
+
+## 📌 Incident 000-C: Checkov IaC Security Violations (CIS AWS Benchmark)
+
+| Metadata | Details |
+|---|---|
+| **Date** | 2026-11-16 |
+| **Component** | Infrastructure as Code |
+| **Severity** | HIGH (Compliance Failure) |
+| **Detected By** | Checkov Static Analysis |
+| **Status** | **RESOLVED** ✅ |
+
+### 1. What Broke?
+Checkov reported security violations:
+- `CKV_AWS_24`: Security group allows unrestricted SSH (`0.0.0.0/0:22`).
+- `CKV_AWS_19`: S3 bucket does not have server-side encryption enabled.
+- `CKV_AWS_54`: S3 bucket public access not explicitly blocked.
+
+### 2. Root Cause Analysis (RCA)
+Default infrastructure templates left port 22 open and relied on unencrypted S3 defaults.
+
+### 3. How Was It Fixed?
+1. **Port 22 completely eliminated** in OpenTofu security group. Host administration shifted to **AWS Systems Manager (SSM) Session Manager** with IAM role authentication.
+2. Added `aws_s3_bucket_server_side_encryption_configuration` with `AES256`.
+3. Added `aws_s3_bucket_public_access_block` enabling all 4 block settings (`block_public_acls`, `block_public_policy`, `ignore_public_acls`, `restrict_public_buckets`).
+4. Enforced **IMDSv2** on the EC2 instance (`http_tokens = "required"`).

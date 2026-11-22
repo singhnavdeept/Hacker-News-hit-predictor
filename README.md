@@ -170,6 +170,7 @@ tofu destroy -auto-approve
 ## 📚 Complete Project Documentation
 
 * 📖 **[Operational Runbook](docs/OPERATIONAL_RUNBOOK.md):** Step-by-step incident response, alarm troubleshooting, and 1-click rollback guide.
+* 🛠️ **[Incident, Bug & Fix Log](docs/INCIDENT_AND_FIX_LOG.md):** Detailed technical root-cause analyses (RCAs) and permanent remediations for all pipeline, dependency, and infrastructure issues.
 * 📋 **[Production Upgrade Plan](docs/PRODUCTION_UPGRADE_PLAN.md):** Full JD alignment, cost analysis, and architectural design specification.
 * 🎓 **[Viva & Technical Question Bank](docs/VIVA_QUESTIONS.md):** 100 comprehensive questions covering MLOps, Docker, AWS, OpenTofu, and DevSecOps.
 * 📘 **[Complete Learning Guide](docs/LEARNING_GUIDE.md):** In-depth technical reference explaining every architectural decision and component.
